@@ -76,6 +76,8 @@ Each Gateway can have the following settings:
 | Setting                  | Type      | Description
 | ------------------------ | --------- | ---
 | `is_manual`              | *boolean* | Set this to true if this gateway should be considered a "Manual" Payment (eg. Invoice)
+| `use_authorize`          | *boolean* | Whether or not this Gateway should prefer authorize over purchase
+| `use_async_notification` | *boolean* | When set to true, this Gateway will receive asynchronous notifications from the Payment provider
 | `token_key`              | *string*  | Key for the token parameter
 | `required_fields`        | *array*   | An array of required form-fields
 | `properties`             | *map*     | All gateway properties that will be passed along to the Omnipay Gateway instance

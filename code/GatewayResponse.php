@@ -5,7 +5,8 @@
  *
  * @package payment
  */
-class GatewayResponse{
+class GatewayResponse
+{
 
 	/**
 	 * @var Omnipay\Common\Message\AbstractResponse

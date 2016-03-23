@@ -9,7 +9,7 @@ class PurchaseServiceTest extends PaymentTest {
 	public function testDummyOnSitePurchase() {
 		$payment = $this->payment;
 		$service = new PurchaseService($payment);
-		$response = $service->purchase(array(
+		$response = $service->initiate(array(
 			'firstName' => 'joe',
 			'lastName' => 'bloggs',
 			'number' => '4242424242424242', //this creditcard will succeed
@@ -43,7 +43,7 @@ class PurchaseServiceTest extends PaymentTest {
 	public function testFailedDummyOnSitePurchase() {
 		$payment = $this->payment;
 		$service = new PurchaseService($payment);
-		$response = $service->purchase(array(
+		$response = $service->initiate(array(
 			'firstName' => 'joe',
 			'lastName' => 'bloggs',
 			'number' => '4111111111111111',  //this creditcard will decline
@@ -67,7 +67,7 @@ class PurchaseServiceTest extends PaymentTest {
 		$payment = $this->payment->setGateway('PaymentExpress_PxPost');
 		$service = new PurchaseService($payment);
 		$this->setMockHttpResponse('paymentexpress/tests/Mock/PxPostPurchaseSuccess.txt');//add success mock response from file
-		$response = $service->purchase(array(
+		$response = $service->initiate(array(
 			'firstName' => 'joe',
 			'lastName' => 'bloggs',
 			'number' => '4242424242424242', //this creditcard will succeed
@@ -89,7 +89,7 @@ class PurchaseServiceTest extends PaymentTest {
 		$payment = $this->payment->setGateway("PaymentExpress_PxPost");
 		$service = new PurchaseService($payment);
 		//pass no card details nothing
-		$response = $service->purchase(array());
+		$response = $service->initiate(array());
 
 		//check messaging
 		$this->assertFalse($response->isSuccessful()); //payment has not been captured
@@ -108,7 +108,7 @@ class PurchaseServiceTest extends PaymentTest {
 		$payment = $this->payment->setGateway('PaymentExpress_PxPost');
 		$service = new PurchaseService($payment);
 		$this->setMockHttpResponse('paymentexpress/tests/Mock/PxPostPurchaseFailure.txt');//add success mock response from file
-		$response = $service->purchase(array(
+		$response = $service->initiate(array(
 			'number' => '4111111111111111', //this creditcard will decline
 			'expiryMonth' => '5',
 			'expiryYear' => date("Y", strtotime("+1 year"))
@@ -128,7 +128,7 @@ class PurchaseServiceTest extends PaymentTest {
 		$payment = $this->payment->setGateway('PaymentExpress_PxPay');
 		$service = new PurchaseService($payment);
 		$this->setMockHttpResponse('paymentexpress/tests/Mock/PxPayPurchaseSuccess.txt');//add success mock response from file
-		$response = $service->purchase();
+		$response = $service->initiate();
 		$this->assertFalse($response->isSuccessful()); //payment has not been captured
 		$this->assertTrue($response->isRedirect());
 		$this->assertSame(
@@ -140,7 +140,7 @@ class PurchaseServiceTest extends PaymentTest {
 		$this->setMockHttpResponse('paymentexpress/tests/Mock/PxPayCompletePurchaseSuccess.txt');
 		//mock the 'result' get variable into the current request
 		$this->getHttpRequest()->query->replace(array('result' => 'abc123'));
-		$response = $service->completePurchase();
+		$response = $service->complete();
 		$this->assertTrue($response->isSuccessful());
 		$this->assertSame("Captured", $payment->Status);
 
@@ -157,7 +157,7 @@ class PurchaseServiceTest extends PaymentTest {
 		$payment = $this->payment->setGateway('PaymentExpress_PxPay');
 		$service = new PurchaseService($payment);
 		$this->setMockHttpResponse('paymentexpress/tests/Mock/PxPayPurchaseFailure.txt');//add success mock response from file
-		$response = $service->purchase();
+		$response = $service->initiate();
 		$this->assertFalse($response->isSuccessful()); //payment has not been captured
 		$this->assertFalse($response->isRedirect()); //redirect won't occur, because of failure
 		$this->assertSame("Created", $payment->Status);
@@ -208,7 +208,7 @@ class PurchaseServiceTest extends PaymentTest {
 
 		$this->setExpectedException("RuntimeException");
 		try{
-		$result = $service->purchase();
+		$result = $service->initiate();
 		}catch(RuntimeException $e){
 			$this->markTestIncomplete();
 		$totalNZD = Payment::get()->filter('MoneyCurrency', "NZD")->sum();
@@ -249,7 +249,7 @@ class PurchaseServiceTest extends PaymentTest {
 		$service = PurchaseService::create($payment);
 		$service->setGatewayFactory($this->stubGatewayFactory($stubGateway));
 
-		$service->purchase(array('token' => 'ABC123'));
+		$service->initiate(array('token' => 'ABC123'));
 	}
 
     public function testTokenGatewayWithAlternateKey() {
@@ -280,7 +280,7 @@ class PurchaseServiceTest extends PaymentTest {
         $service = PurchaseService::create($payment);
         $service->setGatewayFactory($this->stubGatewayFactory($stubGateway));
 
-        $service->purchase(array('my_token' => 'ABC123'));
+        $service->initiate(array('my_token' => 'ABC123'));
     }
 
 	/**

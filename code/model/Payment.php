@@ -13,7 +13,7 @@ final class Payment extends DataObject{
 	private static $db = array(
 		'Gateway' => 'Varchar(50)', //this is the omnipay 'short name'
 		'Money' => 'Money', //contains Amount and Currency
-		'Status' => "Enum('Created,Authorized,Captured,Refunded,Void','Created')",
+        'Status' => "Enum('Created,PendingAuthorization,Authorized,PendingCapture,Captured,PendingRefund,Refunded,PendingVoid,Void','Created')",
 		'Identifier' => 'Varchar'
 	);
 

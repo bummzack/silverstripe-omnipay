@@ -4,12 +4,12 @@ class VoidService extends PaymentService{
 
 	/**
 	 * Cancel this payment, and prevent any future changes.
-	 * @return PaymentResponse encapsulated response info
+	 * @inheritdoc
 	 */
-	public function void() {
-		//TODO: call gateway function, if available
+	public function initiate($data = array())
+    {
+        //TODO: call gateway function, if available
 		$this->payment->Status = "Void";
 		$this->payment->write();
-	}
-
+    }
 }

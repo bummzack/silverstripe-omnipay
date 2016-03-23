@@ -13,6 +13,7 @@
 
 use Omnipay\Common\AbstractGateway;
 use Omnipay\Common\GatewayFactory;
+use Omnipay\Common\CreditCard;
 use Omnipay\Common\Message\AbstractResponse;
 use Omnipay\Common\Message\AbstractRequest;
 
@@ -133,6 +134,22 @@ abstract class PaymentService extends Object
 		}
 	}
 
+    /**
+     * Initiate a gateway request with some user/application supplied data.
+     * @param array $data payment data
+     * @return GatewayResponse the gateway response (wrapped)
+     */
+    abstract function initiate($data = array());
+
+    /**
+     * Complete a previously initiated gateway request.
+     * This is separate from initiate, since some requests require more than one step. Eg. offsite payments or
+     * payments to gateways that return asynchronous responses.
+     * @param array $data payment data
+     * @param bool $isNotification whether or not this was called from a notification callback (async). Defaults to false
+     * @return GatewayResponse the gateway response (wrapped)
+     */
+    abstract function complete($data = array(), $isNotification = false);
 
 	/**
 	 * Get the omnipay gateway associated with this payment,
@@ -269,6 +286,13 @@ abstract class PaymentService extends Object
 		$this->gatewayFactory = $gatewayFactory;
 		return $this;
 	}
+
+    /**
+     * @return \Omnipay\Common\CreditCard
+     */
+    protected function getCreditCard($data) {
+        return new CreditCard($data);
+    }
 
 	//testing functions (could these instead be injected somehow?)
 

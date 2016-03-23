@@ -1,23 +1,19 @@
 <?php
 
-use Omnipay\Common\CreditCard;
-use Omnipay\Common\Message\ResponseInterface;
-
 class PurchaseService extends PaymentService
 {
-
 	/**
 	 * Attempt to make a payment.
 	 *
+	 * @inheritdoc
 	 * @param  array $data returnUrl/cancelUrl + customer creditcard and billing/shipping details.
 	 * 	Some keys (e.g. "amount") are overwritten with data from the associated {@link $payment}.
 	 *  If this array is constructed from user data (e.g. a form submission), please take care
 	 *  to whitelist accepted fields, in order to ensure sensitive gateway parameters like "freeShipping" can't be set.
 	 *  If using {@link Form->getData()}, only fields which exist in the form are returned,
 	 *  effectively whitelisting against arbitrary user input.
-	 * @return ResponseInterface omnipay's response class, specific to the chosen gateway.
 	 */
-	public function purchase($data = array()) {
+	public function initiate($data = array()) {
 		if ($this->payment->Status !== "Created") {
 			return null; //could be handled better? send payment response?
 		}
@@ -112,10 +108,11 @@ class PurchaseService extends PaymentService
 	/**
 	 * Finalise this payment, after off-site external processing.
 	 * This is ususally only called by PaymentGatewayController.
-	 * @return GatewayResponse encapsulated response info
+	 * @inheritdoc
 	 */
-	public function completePurchase($data = array()) {
-		$gatewayresponse = $this->createGatewayResponse();
+    public function complete($data = array(), $isNotification = false)
+    {
+        $gatewayresponse = $this->createGatewayResponse();
 
 		//set the client IP address, if not already set
 		if(!isset($data['clientIp'])){
@@ -150,25 +147,6 @@ class PurchaseService extends PaymentService
 		}
 
 		return $gatewayresponse;
-	}
-
-	public function cancelPurchase() {
-		//TODO: do lookup? / try to complete purchase?
-		//TODO: omnipay void call
-		$this->payment->Status = 'Void';
-		$this->payment->write();
-		$this->createMessage('VoidRequest', array(
-			"Message" => "The payment was cancelled."
-		));
-
-		//return response
-	}
-
-	/**
-	 * @return \Omnipay\Common\CreditCard
-	 */
-	protected function getCreditCard($data) {
-		return new CreditCard($data);
 	}
 
 }
