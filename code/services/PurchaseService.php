@@ -149,4 +149,33 @@ class PurchaseService extends PaymentService
 		return $gatewayresponse;
 	}
 
+    /**
+     * Attempt to make a payment.
+     *
+     * @inheritdoc
+     * @param  array $data returnUrl/cancelUrl + customer creditcard and billing/shipping details.
+     * 	Some keys (e.g. "amount") are overwritten with data from the associated {@link $payment}.
+     *  If this array is constructed from user data (e.g. a form submission), please take care
+     *  to whitelist accepted fields, in order to ensure sensitive gateway parameters like "freeShipping" can't be set.
+     *  If using {@link Form->getData()}, only fields which exist in the form are returned,
+     *  effectively whitelisting against arbitrary user input.
+     * @deprecated 3.0 Use the `initiate` method instead
+     */
+    public function purchase($data = array())
+    {
+        Deprecation::notice('3.0', 'Use the `initiate` method instead.');
+        return $this->initiate($data);
+    }
+
+    /**
+     * Finalise this payment, after off-site external processing.
+     * This is ususally only called by PaymentGatewayController.
+     * @deprecated 3.0 Use the `complete` method instead
+     */
+    public function completePurchase($data = array())
+    {
+        Deprecation::notice('3.0', 'Use the `complete` method instead.');
+        return $this->complete($data);
+    }
+
 }
