@@ -174,6 +174,55 @@ abstract class PaymentService extends Object
 		return $gateway;
 	}
 
+    /**
+     * Collect common data parameters to pass to the gateway.
+     * This method should merge in common data that is required by all services.
+     *
+     * If you override this method, make sure to merge your data with parent::gatherGatewayData
+     *
+     * @param array $data incoming data for the gateway
+     * @param boolean $includeCardOrToken whether or not to include card or token data
+     * @return array
+     */
+    protected function gatherGatewayData($data = array(), $includeCardOrToken = true)
+    {
+        //set the client IP address, if not already set
+        if(!isset($data['clientIp'])){
+            $data['clientIp'] = Controller::curr()->getRequest()->getIP();
+        }
+
+        $gatewaydata = array_merge($data, array(
+            'amount' => (float) $this->payment->MoneyAmount,
+            'currency' => $this->payment->MoneyCurrency,
+            //set all gateway return/cancel/notify urls to PaymentGatewayController endpoint
+            'returnUrl' => $this->getEndpointURL("complete", $this->payment->Identifier),
+            'cancelUrl' => $this->getEndpointURL("cancel", $this->payment->Identifier),
+            'notifyUrl' => $this->getEndpointURL("notify", $this->payment->Identifier)
+        ));
+
+        // Often, the shop will want to pass in a transaction ID (order #, etc), but if there's
+        // not one we need to set it as Ominpay requires this.
+        if(!isset($gatewaydata['transactionId'])){
+            $gatewaydata['transactionId'] = $this->payment->Identifier;
+        }
+
+        if($includeCardOrToken){
+            // We only look for a card if we aren't already provided with a token
+            // Increasingly we can expect tokens or nonce's to be more common (e.g. Stripe and Braintree)
+            $tokenKey = GatewayInfo::getTokenKey($this->payment->Gateway);
+            if (empty($gatewaydata[$tokenKey])) {
+                $gatewaydata['card'] = $this->getCreditCard($data);
+            } elseif ($tokenKey !== 'token') {
+                // some gateways (eg. braintree) use a different key but we need
+                // to normalize that for omnipay
+                $gatewaydata['token'] = $gatewaydata[$tokenKey];
+                unset($gatewaydata[$tokenKey]);
+            }
+        }
+
+        return $gatewaydata;
+    }
+
 	/**
 	 * Generate a return/notify url for off-site gateways (completePayment).
 	 * @return string endpoint url

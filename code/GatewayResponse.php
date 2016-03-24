@@ -1,5 +1,10 @@
 <?php
 
+// TODO: Split this up into several classes for the different possible responses
+// TODO: Maybe also rename to GatewayServiceResponse, with a Base-Class of AbstractServiceResponse
+// TODO: Some services might just return a 'success' response and nothing omnipay related, since payment process
+//  is already complete
+
 /**
  * Wrapper for omnipay responses, which allow us to customise functionality
  *
@@ -12,19 +17,19 @@ class GatewayResponse
 	 * @var Omnipay\Common\Message\AbstractResponse
 	 */
 	private $response;
-	
+
 	/**
 	 * @var Payment
 	 */
 	private $payment;
-	
+
 	/**
 	 * @var String Success message which can be exposed to the user
 	 * if the payment was successful. Not persisted in database, so can't
 	 * be used for offsite payment processing.
 	 */
 	private $message;
-	
+
 	/**
 	 * @var String URL to an endpoint within SilverStripe that can process
 	 * the response, usually {@link PaymentGatewayController}.
@@ -51,7 +56,7 @@ class GatewayResponse
 	 * Note that {@link redirect()} will still cause a redirect for onsite gateways,
 	 * but in this case uses the provided {@link redirect} URL rather than asking the gateway
 	 * on where to redirect.
-	 * 
+	 *
 	 * @return boolean
 	 */
 	public function isRedirect() {
@@ -76,7 +81,7 @@ class GatewayResponse
 
 	/**
 	 * See {@link $message}.
-	 * 
+	 *
 	 * @param String $message
 	 */
 	public function setMessage($message) {
@@ -101,7 +106,7 @@ class GatewayResponse
 
 	/**
 	 * See {@link $redirect}.
-	 * 
+	 *
 	 * @param String $url
 	 */
 	public function setRedirectURL($url) {
@@ -131,15 +136,15 @@ class GatewayResponse
 			// either through GET with simep URL, or POST with a self-submitting form.
 			$redirectOmnipayResponse = $this->response->getRedirectResponse();
 			if($redirectOmnipayResponse instanceof Symfony\Component\HttpFoundation\RedirectResponse) {
-				return Controller::curr()->redirect($redirectOmnipayResponse->getTargetUrl());	
+				return Controller::curr()->redirect($redirectOmnipayResponse->getTargetUrl());
 			} else {
 				return new SS_HTTPResponse((string)$redirectOmnipayResponse->getContent(), 200);
-			}		
+			}
 		} else {
 			// Onsite gateway, redirect to application specific "completed" URL
 			return Controller::curr()->redirect($this->getRedirectURL());
 		}
-		
+
 	}
 
 }
