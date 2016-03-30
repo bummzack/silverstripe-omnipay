@@ -1,7 +1,11 @@
 <?php
 
-namespace SilverStripe\Omnipay;
+namespace SilverStripe\Omnipay\Service;
 
+
+use SilverStripe\Omnipay\Exception\InvalidStateException;
+use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
+use SilverStripe\Omnipay\GatewayResponse;
 
 class PurchaseService extends PaymentService
 {

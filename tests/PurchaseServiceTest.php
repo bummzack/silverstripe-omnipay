@@ -3,7 +3,7 @@
 use Omnipay\Common\GatewayFactory;
 use Omnipay\Common\GatewayInterface;
 use Omnipay\PaymentExpress\Message\PxPayAuthorizeResponse;
-use SilverStripe\Omnipay\PurchaseService;
+use SilverStripe\Omnipay\Service\PurchaseService;
 
 class PurchaseServiceTest extends PaymentTest {
 

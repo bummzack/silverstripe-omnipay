@@ -1,6 +1,6 @@
 <?php
 
-use SilverStripe\Omnipay\PurchaseService;
+use SilverStripe\Omnipay\Service\PurchaseService;
 
 
 class PaymentServiceTest extends PaymentTest{

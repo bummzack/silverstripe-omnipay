@@ -1,8 +1,12 @@
 <?php
 
-namespace SilverStripe\Omnipay;
+namespace SilverStripe\Omnipay\Service;
 
 
+use SilverStripe\Omnipay\GatewayInfo;
+use SilverStripe\Omnipay\GatewayResponse;
+use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
+use SilverStripe\Omnipay\Exception\InvalidStateException;
 use Guzzle\Http\ClientInterface;
 use Omnipay\Common\AbstractGateway;
 use Omnipay\Common\GatewayFactory;

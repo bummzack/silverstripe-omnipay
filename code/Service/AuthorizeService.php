@@ -1,15 +1,13 @@
 <?php
 
-namespace SilverStripe\Omnipay;
+namespace SilverStripe\Omnipay\Service;
 
-/**
- * Service used in tandem with AuthorizeService.
- * This service captures a previously authorized amount
- */
-class CaptureService extends PaymentService
+
+
+class AuthorizeService extends PaymentService
 {
-    //TODO: Ensure that this can also capture partial payments.
     /**
+     * Initiate the authorisation process for on-site and off-site gateways.
      * @inheritdoc
      */
     public function initiate($data = array())
@@ -18,6 +16,7 @@ class CaptureService extends PaymentService
     }
 
     /**
+     * Complete authorisation, after off-site external processing.
      * @inheritdoc
      */
     public function complete($data = array(), $isNotification = false)

@@ -1,6 +1,6 @@
 <?php
 
-use SilverStripe\Omnipay\PurchaseService;
+use SilverStripe\Omnipay\Service\PurchaseService;
 
 /**
  * Payment Gateway Controller

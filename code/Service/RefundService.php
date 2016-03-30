@@ -1,6 +1,6 @@
 <?php
 
-namespace SilverStripe\Omnipay;
+namespace SilverStripe\Omnipay\Service;
 
 
 class RefundService extends PaymentService
