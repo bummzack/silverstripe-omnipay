@@ -1,5 +1,7 @@
 <?php
 
+use SilverStripe\Omnipay\PaymentGatewayController;
+
 class PaymentGatewayControllerTest extends PaymentTest{
 
 	public static $fixture_file = array(

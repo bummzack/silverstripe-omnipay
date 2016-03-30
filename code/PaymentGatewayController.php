@@ -1,5 +1,6 @@
 <?php
 
+namespace SilverStripe\Omnipay;
 use SilverStripe\Omnipay\Service\PurchaseService;
 
 /**
@@ -10,7 +11,7 @@ use SilverStripe\Omnipay\Service\PurchaseService;
  *
  * @package payment
  */
-class PaymentGatewayController extends Controller
+class PaymentGatewayController extends \Controller
 {
 
 	private static $allowed_actions = array(
@@ -25,21 +26,20 @@ class PaymentGatewayController extends Controller
      */
     public static function getEndpointUrl($action, $identifier)
     {
-        return Director::absoluteURL(
-            Controller::join_links('paymentendpoint', $identifier, $action)
+        return \Director::absoluteURL(
+            \Controller::join_links('paymentendpoint', $identifier, $action)
         );
     }
 
 	/**
 	 * Generate an absolute url for gateways to return to, or send requests to.
-	 * @param  GatewayMessage $message message that redirect applies to.
 	 * @param  string             $action      the intended action of the gateway
 	 * @param  string             $returnurl   the application url to re-redirect to
 	 * @return string                          the resulting redirect url
      * @deprecated 3.0 Snake-case methods will be deprecated with 3.0, use getEndpointUrl
 	 */
 	public static function get_endpoint_url($action, $identifier) {
-        Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0, use getEndpointUrl');
+        \Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0, use getEndpointUrl');
 		return self::getEndpointUrl($action, $identifier);
 	}
 
@@ -82,7 +82,7 @@ class PaymentGatewayController extends Controller
 				$serviceResponse = $service->complete(array(), true);
 				// Allow implementations where no redirect happens,
 				// since gateway failsafe callbacks might expect a 2xx HTTP response
-				$response = new SS_HTTPResponse('', 200);
+				$response = new \SS_HTTPResponse('', 200);
 				break;
 			case "cancel":
 				//TODO: store cancellation message / void payment
@@ -97,10 +97,10 @@ class PaymentGatewayController extends Controller
 
 	/**
 	 * Get the the payment according to the identifer given in the url
-	 * @return Payament the payment
+	 * @return \Payament the payment
 	 */
 	private function getPayment() {
-		return Payment::get()
+		return \Payment::get()
 				->filter('Identifier', $this->request->param('Identifier'))
 				->filter('Identifier:not', "")
 				->first();
@@ -112,7 +112,7 @@ class PaymentGatewayController extends Controller
 	 * @return string the url
 	 */
 	private function getSuccessUrl($message) {
-		return $message->SuccessURL ? $message->SuccessURL : Director::baseURL();
+		return $message->SuccessURL ? $message->SuccessURL : \Director::baseURL();
 	}
 
 	/**
@@ -121,7 +121,7 @@ class PaymentGatewayController extends Controller
 	 * @return string the url
 	 */
 	private function getFailureUrl($message) {
-		return $message->FailureURL ? $message->FailureURL : Director::baseURL();
+		return $message->FailureURL ? $message->FailureURL : \Director::baseURL();
 	}
 
 }

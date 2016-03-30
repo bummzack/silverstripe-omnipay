@@ -4,6 +4,7 @@ namespace SilverStripe\Omnipay\Service;
 
 
 use SilverStripe\Omnipay\GatewayInfo;
+use SilverStripe\Omnipay\PaymentGatewayController;
 use SilverStripe\Omnipay\GatewayResponse;
 use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
 use SilverStripe\Omnipay\Exception\InvalidStateException;
@@ -241,7 +242,7 @@ abstract class PaymentService extends \Object
 	 * @return string endpoint url
 	 */
 	protected function getEndpointURL($action, $identifier) {
-		return \PaymentGatewayController::getEndpointUrl($action, $identifier);
+		return PaymentGatewayController::getEndpointUrl($action, $identifier);
 	}
 
 	/**
