@@ -1,5 +1,8 @@
 <?php
 
+namespace SilverStripe\Omnipay;
+
+
 class PurchaseService extends PaymentService
 {
 	/**
@@ -15,8 +18,7 @@ class PurchaseService extends PaymentService
 	 */
 	public function initiate($data = array()) {
 		if ($this->payment->Status !== 'Created') {
-            //TODO: Throw exception?
-			return null; //could be handled better? send payment response?
+            throw new InvalidStateException('Cannot initiate a purchase with this payment. Status is not "Created"');
 		}
 
 		if (!$this->payment->isInDB()) {
@@ -64,7 +66,7 @@ class PurchaseService extends PaymentService
 					"Error (".$response->getCode()."): ".$response->getMessage()
 				);
 			}
-		} catch (Omnipay\Common\Exception\OmnipayException $e) {
+		} catch (\Omnipay\Common\Exception\OmnipayException $e) {
 			$this->createMessage('PurchaseError', $e);
             $gatewayResponse->setMessage($e->getMessage());
 		}
@@ -84,7 +86,7 @@ class PurchaseService extends PaymentService
         if($this->payment->Status === 'Captured'){
             return null;
         }
-        
+
         $gateway = $this->oGateway();
         if (!$gateway->supportsCompletePurchase()) {
             //TODO: Throw exception?
@@ -110,7 +112,7 @@ class PurchaseService extends PaymentService
 			} else {
 				$this->createMessage('CompletePurchaseError', $response);
 			}
-		} catch (Omnipay\Common\Exception\OmnipayException $e) {
+		} catch (\Omnipay\Common\Exception\OmnipayException $e) {
 			$this->createMessage("CompletePurchaseError", $e);
 		}
 
@@ -140,7 +142,7 @@ class PurchaseService extends PaymentService
      */
     public function purchase($data = array())
     {
-        Deprecation::notice('3.0', 'Use the `initiate` method instead.');
+        \Deprecation::notice('3.0', 'Use the `initiate` method instead.');
         return $this->initiate($data);
     }
 
@@ -151,7 +153,7 @@ class PurchaseService extends PaymentService
      */
     public function completePurchase($data = array())
     {
-        Deprecation::notice('3.0', 'Use the `complete` method instead.');
+        \Deprecation::notice('3.0', 'Use the `complete` method instead.');
         return $this->complete($data);
     }
 

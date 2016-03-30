@@ -1,6 +1,10 @@
 <?php
 
-class VoidService extends PaymentService{
+namespace SilverStripe\Omnipay;
+
+
+class VoidService extends PaymentService
+{
 
 	/**
 	 * Cancel this payment, and prevent any future changes.
@@ -11,5 +15,10 @@ class VoidService extends PaymentService{
         //TODO: call gateway function, if available
 		$this->payment->Status = "Void";
 		$this->payment->write();
+    }
+
+    public function complete($data = array(), $isNotification = false)
+    {
+        // TODO: Implement complete() method.
     }
 }

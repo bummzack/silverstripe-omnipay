@@ -1,5 +1,17 @@
 <?php
 
+namespace SilverStripe\Omnipay;
+
+
+use Guzzle\Http\ClientInterface;
+use Omnipay\Common\AbstractGateway;
+use Omnipay\Common\GatewayFactory;
+use Omnipay\Common\CreditCard;
+use Omnipay\Common\Message\AbstractResponse;
+use Omnipay\Common\Message\AbstractRequest;
+use Omnipay\Common\Exception\OmnipayException;
+use Symfony\Component\HttpFoundation\Request;
+
 /**
  * Payment Service
  *
@@ -10,27 +22,20 @@
  *
  * @package payment
  */
-
-use Omnipay\Common\AbstractGateway;
-use Omnipay\Common\GatewayFactory;
-use Omnipay\Common\CreditCard;
-use Omnipay\Common\Message\AbstractResponse;
-use Omnipay\Common\Message\AbstractRequest;
-
-abstract class PaymentService extends Object
+abstract class PaymentService extends \Object
 {
 	/**
-	 * @var Guzzle\Http\ClientInterface
+	 * @var \Guzzle\Http\ClientInterface
 	 */
 	private static $httpclient;
 
 	/**
-	 * @var Symfony\Component\HttpFoundation\Request
+	 * @var \Symfony\Component\HttpFoundation\Request
 	 */
 	private static $httprequest;
 
 	/**
-	 * @var Payment
+	 * @var \Payment
 	 */
 	protected $payment;
 
@@ -45,7 +50,7 @@ abstract class PaymentService extends Object
 	protected $cancelurl;
 
 	/**
-	 * @var Guzzle\Http\Message\Response
+	 * @var \Guzzle\Http\Message\Response
 	 */
 	protected $response;
 
@@ -60,9 +65,9 @@ abstract class PaymentService extends Object
 
 
     /**
-     * @param Payment
+     * @param \Payment
      */
-	public function __construct(Payment $payment) {
+	public function __construct(\Payment $payment) {
 		parent::__construct();
 		$this->payment = $payment;
 	}
@@ -137,6 +142,8 @@ abstract class PaymentService extends Object
     /**
      * Initiate a gateway request with some user/application supplied data.
      * @param array $data payment data
+     * @throws InvalidStateException when the payment is in a state that prevents running `complete`
+     * @throws InvalidConfigurationException when there's a misconfiguration in the module itself
      * @return GatewayResponse the gateway response (wrapped)
      */
     abstract function initiate($data = array());
@@ -147,6 +154,8 @@ abstract class PaymentService extends Object
      * payments to gateways that return asynchronous responses.
      * @param array $data payment data
      * @param bool $isNotification whether or not this was called from a notification callback (async). Defaults to false
+     * @throws InvalidStateException when the payment is in a state that prevents running `complete`
+     * @throws InvalidConfigurationException when there's a misconfiguration in the module itself
      * @return GatewayResponse the gateway response (wrapped)
      */
     abstract function complete($data = array(), $isNotification = false);
@@ -155,7 +164,7 @@ abstract class PaymentService extends Object
 	 * Get the omnipay gateway associated with this payment,
 	 * with configuration applied.
 	 *
-	 * @throws RuntimeException - when gateway doesn't exist.
+	 * @throws \RuntimeException - when gateway doesn't exist.
 	 * @return AbstractGateway omnipay gateway class
 	 */
 	public function oGateway() {
@@ -188,7 +197,7 @@ abstract class PaymentService extends Object
     {
         //set the client IP address, if not already set
         if(!isset($data['clientIp'])){
-            $data['clientIp'] = Controller::curr()->getRequest()->getIP();
+            $data['clientIp'] = \Controller::curr()->getRequest()->getIP();
         }
 
         $gatewaydata = array_merge($data, array(
@@ -228,7 +237,7 @@ abstract class PaymentService extends Object
 	 * @return string endpoint url
 	 */
 	protected function getEndpointURL($action, $identifier) {
-		return PaymentGatewayController::getEndpointUrl($action, $identifier);
+		return \PaymentGatewayController::getEndpointUrl($action, $identifier);
 	}
 
 	/**
@@ -236,7 +245,7 @@ abstract class PaymentService extends Object
 	 * @param string $type the type of transaction to create.
 	 *        This is any class that is (or extends) PaymentMessage.
 	 * @param array|string|AbstractResponse|AbstractRequest|OmnipayException $data the response to record, or data to store
-	 * @return GatewayTransaction newly created dataobject, saved to database.
+	 * @return \GatewayTransaction newly created dataobject, saved to database.
 	 */
 	protected function createMessage($type, $data = null) {
 		$output = array();
@@ -246,7 +255,7 @@ abstract class PaymentService extends Object
 			);
 		} elseif (is_array($data)) {
 			$output = $data;
-		} elseif ($data instanceof Omnipay\Common\Exception\OmnipayException) {
+		} elseif ($data instanceof OmnipayException) {
 			$output = array(
 				"Message" => $data->getMessage(),
 				"Code" => $data->getCode(),
@@ -292,15 +301,15 @@ abstract class PaymentService extends Object
 	 * Helper function for logging gateway requests
 	 */
 	protected function logToFile($data, $type = "") {
-		if($logstyle = Payment::config()->file_logging){
+		if($logstyle = \Payment::config()->file_logging){
 			$title = $type." (".$this->payment->Gateway.")";
 			if ($logstyle === "verbose") {
-				Debug::log(
+				\Debug::log(
 					$title."\n\n".
 					print_r($data, true)
 				);
 			} elseif($logstyle) {
-				Debug::log(implode(", ", array(
+				\Debug::log(implode(", ", array(
 					$title,
 					isset($data['Message']) ? $data['Message'] : " ",
 					isset($data['Code']) ? $data['Code'] : " ",
@@ -320,7 +329,7 @@ abstract class PaymentService extends Object
 	 */
 	public function getGatewayFactory() {
         if (!isset($this->gatewayFactory)) {
-            $this->gatewayFactory = Injector::inst()->get('Omnipay\Common\GatewayFactory');
+            $this->gatewayFactory = \Injector::inst()->get('Omnipay\Common\GatewayFactory');
         }
 
 		return $this->gatewayFactory;
@@ -347,9 +356,9 @@ abstract class PaymentService extends Object
 
     /**
      * Set the guzzle client (for testing)
-     * @param Guzzle\Http\ClientInterface $httpClient guzzle client for testing
+     * @param \Guzzle\Http\ClientInterface $httpClient guzzle client for testing
      */
-    public static function setHttpClient(Guzzle\Http\ClientInterface $httpClient)
+    public static function setHttpClient(ClientInterface $httpClient)
     {
         self::$httpclient = $httpClient;
     }
@@ -361,9 +370,9 @@ abstract class PaymentService extends Object
 
     /**
      * Set the symphony http request (for testing)
-     * @param Symfony\Component\HttpFoundation\Request $httpRequest symphony http request for testing
+     * @param \Symfony\Component\HttpFoundation\Request $httpRequest symphony http request for testing
      */
-    public static function setHttpRequest(Symfony\Component\HttpFoundation\Request $httpRequest)
+    public static function setHttpRequest(Request $httpRequest)
     {
         self::$httprequest = $httpRequest;
     }
@@ -380,11 +389,11 @@ abstract class PaymentService extends Object
 
 	/**
 	 * Set the guzzle client (for testing)
-	 * @param Guzzle\Http\ClientInterface $httpClient guzzle client for testing
+	 * @param \Guzzle\Http\ClientInterface $httpClient guzzle client for testing
      * @deprecated 3.0 Snake-case methods will be deprecated with 3.0, use setHttpClient
 	 */
-	public static function set_http_client(Guzzle\Http\ClientInterface $httpClient) {
-        Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0, use setHttpClient');
+	public static function set_http_client(ClientInterface $httpClient) {
+        \Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0, use setHttpClient');
 		self::setHttpClient($httpClient);
 	}
 
@@ -392,17 +401,17 @@ abstract class PaymentService extends Object
      * @deprecated 3.0 Snake-case methods will be deprecated with 3.0, use getHttpClient
      */
 	public static function get_http_client() {
-        Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0, use getHttpClient');
+        \Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0, use getHttpClient');
 		return self::getHttpClient();
 	}
 
 	/**
 	 * Set the symphony http request (for testing)
-	 * @param Symfony\Component\HttpFoundation\Request $httpRequest symphony http request for testing
+	 * @param \Symfony\Component\HttpFoundation\Request $httpRequest symphony http request for testing
      * @deprecated 3.0 Snake-case methods will be deprecated with 3.0, use setHttpRequest
 	 */
-	public static function set_http_request(Symfony\Component\HttpFoundation\Request $httpRequest) {
-        Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0, use setHttpRequest');
+	public static function set_http_request(Request $httpRequest) {
+        \Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0, use setHttpRequest');
         self::setHttpRequest($httpRequest);
 	}
 
@@ -410,7 +419,7 @@ abstract class PaymentService extends Object
      * @deprecated 3.0 Snake-case methods will be deprecated with 3.0, use getHttpRequest
      */
 	public static function get_http_request() {
-        Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0, use getHttpRequest');
+        \Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0, use getHttpRequest');
 		return self::getHttpRequest();
 	}
 

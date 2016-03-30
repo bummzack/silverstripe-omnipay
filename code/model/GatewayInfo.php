@@ -1,5 +1,7 @@
 <?php
 
+namespace SilverStripe\Omnipay;
+use Omnipay\Common\AbstractGateway;
 use Omnipay\Common\GatewayFactory;
 
 /**
@@ -27,11 +29,11 @@ class GatewayInfo
 {
     /**
      * Config accessor
-     * @return Config_ForClass
+     * @return \Config_ForClass
      */
     public static function config()
     {
-        return Config::inst()->forClass('GatewayInfo');
+        return \Config::inst()->forClass('GatewayInfo');
     }
 
     /**
@@ -41,14 +43,14 @@ class GatewayInfo
      */
     public static function getSupportedGateways($nice = true)
     {
-        $allowed = Payment::config()->allowed_gateways;
+        $allowed = \Payment::config()->allowed_gateways;
         if (!is_array($allowed)) {
             //include the manual payment type by default, if no gateways are configured
             $allowed = array("Manual");
         }
         $allowed = array_combine($allowed, $allowed);
         if ($nice) {
-            $allowed = array_map('GatewayInfo::niceTitle', $allowed);
+            $allowed = array_map('\SilverStripe\Omnipay\GatewayInfo::niceTitle', $allowed);
         }
 
         return $allowed;
@@ -65,7 +67,7 @@ class GatewayInfo
         try {
             $factory = new GatewayFactory();
             $gateway = $factory->create($name);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             /** do nothing */
         }
         return _t(
@@ -89,7 +91,7 @@ class GatewayInfo
      * Checks if the given gateway name is an off-site gateway.
      *
      * @param  string $gateway gateway name
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @return boolean the gateway offsite or not
      */
     public static function isOffsite($gateway)
@@ -103,7 +105,7 @@ class GatewayInfo
             return !!$gateway->isOffsite();
         }
 
-        if($gateway instanceof \Omnipay\Common\AbstractGateway){
+        if($gateway instanceof AbstractGateway){
             return ($gateway->supportsCompletePurchase() || $gateway->supportsCompleteAuthorize());
         }
 
@@ -121,9 +123,9 @@ class GatewayInfo
             return true;
         }
 
-        $manualGateways = Payment::config()->manual_gateways;
+        $manualGateways = \Payment::config()->manual_gateways;
         if (is_array($manualGateways)) {
-            Deprecation::notice(
+            \Deprecation::notice(
                 '3.0',
                 'Please refrain from using Payment:manual_gateways config. ' .
                 'Mark individual gateways with `is_manual` instead (see docs).'
@@ -176,9 +178,9 @@ class GatewayInfo
      */
     public static function getTokenKey($gateway, $default = 'token')
     {
-        $tokenKey = Payment::config()->token_key;
+        $tokenKey = \Payment::config()->token_key;
         if($tokenKey){
-            Deprecation::notice(
+            \Deprecation::notice(
                 '3.0',
                 'Please refrain from setting token_key as config parameter of Payment. ' .
                 'Use GatewayInfo and set the token key on a gateway basis (see docs).'
@@ -200,7 +202,7 @@ class GatewayInfo
         $parameters = self::getParameters($gateway);
         $fields = array();
         if (isset($parameters['required_fields']) && is_array($parameters['required_fields'])) {
-            Deprecation::notice(
+            \Deprecation::notice(
                 '3.0',
                 'Please refrain from setting required_fields in the gateway parameters. ' .
                 'Put the `required_fields` directly under the gateway (see docs).'
@@ -232,9 +234,9 @@ class GatewayInfo
      */
     public static function getParameters($gateway)
     {
-        $params = Payment::config()->parameters;
+        $params = \Payment::config()->parameters;
         if (isset($params[$gateway])) {
-            Deprecation::notice(
+            \Deprecation::notice(
                 '3.0',
                 'Please refrain from setting Gateway parameters under Payment. ' .
                 'Use GatewayConfig instead (see docs).'
@@ -275,7 +277,7 @@ class GatewayInfo
      */
     public static function get_supported_gateways($nice = true)
     {
-        Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0. Use getSupportedGateways');
+        \Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0. Use getSupportedGateways');
         return self::getSupportedGateways($nice);
     }
 
@@ -284,7 +286,7 @@ class GatewayInfo
      */
     public static function nice_title($name)
     {
-        Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0. Use niceTitle');
+        \Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0. Use niceTitle');
         return self::niceTitle($name);
     }
 
@@ -296,7 +298,7 @@ class GatewayInfo
      */
     public static function is_supported($gateway)
     {
-        Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0. Use isSupported');
+        \Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0. Use isSupported');
         return self::isSupported($gateway);
     }
 
@@ -304,13 +306,13 @@ class GatewayInfo
      * Checks if the given gateway name is an off-site gateway.
      *
      * @param  string $gateway gateway name
-     * @throws RuntimeException
+     * @throws \RuntimeException
      * @return boolean the gateway offsite or not
      * @deprecated 3.0 Snake-case methods will be deprecated with 3.0, use isOffsite
      */
     public static function is_offsite($gateway)
     {
-        Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0. Use isOffsite');
+        \Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0. Use isOffsite');
         return self::isOffsite($gateway);
     }
 
@@ -322,7 +324,7 @@ class GatewayInfo
      */
     public static function is_manual($gateway)
     {
-        Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0. Use isManual');
+        \Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0. Use isManual');
         return self::isManual($gateway);
     }
 
@@ -334,7 +336,7 @@ class GatewayInfo
      */
     public static function required_fields($gateway)
     {
-        Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0. Use requiredFields');
+        \Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0. Use requiredFields');
         return self::requiredFields($gateway);
     }
 }

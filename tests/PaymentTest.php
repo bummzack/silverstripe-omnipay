@@ -1,4 +1,5 @@
 <?php
+use SilverStripe\Omnipay\PaymentService;
 
 abstract class PaymentTest extends FunctionalTest{
 

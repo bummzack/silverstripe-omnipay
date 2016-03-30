@@ -1,5 +1,7 @@
 <?php
 
+use SilverStripe\Omnipay\GatewayInfo;
+
 /**
  * Payment DataObject
  *

@@ -1,5 +1,7 @@
 <?php
 
+use SilverStripe\Omnipay\PurchaseService;
+
 /**
  * Payment Gateway Controller
  *
@@ -8,7 +10,8 @@
  *
  * @package payment
  */
-class PaymentGatewayController extends Controller{
+class PaymentGatewayController extends Controller
+{
 
 	private static $allowed_actions = array(
 		'endpoint'

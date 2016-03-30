@@ -1,5 +1,8 @@
 <?php
 
+use SilverStripe\Omnipay\PurchaseService;
+
+
 class PaymentServiceTest extends PaymentTest{
 
 	public function testRedirectUrl() {

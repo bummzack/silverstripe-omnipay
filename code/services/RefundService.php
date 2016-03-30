@@ -1,5 +1,8 @@
 <?php
 
+namespace SilverStripe\Omnipay;
+
+
 class RefundService extends PaymentService
 {
 
@@ -49,7 +52,7 @@ class RefundService extends PaymentService
             }
             $this->payment->write();
             $gatewayresponse->setOmnipayResponse($response);
-        } catch (Omnipay\Common\Exception\OmnipayException $e) {
+        } catch (\Omnipay\Common\Exception\OmnipayException $e) {
             $this->createMessage('GatewayErrorMessage', $e);
             $gatewayresponse->setMessage($e->getMessage());
         }

@@ -1,5 +1,6 @@
 <?php
 use Omnipay\Common\AbstractGateway;
+use SilverStripe\Omnipay\GatewayInfo;
 
 class GatewayInfoTest extends SapphireTest {
 

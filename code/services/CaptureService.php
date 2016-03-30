@@ -1,5 +1,7 @@
 <?php
 
+namespace SilverStripe\Omnipay;
+
 /**
  * Service used in tandem with AuthorizeService.
  * This service captures a previously authorized amount

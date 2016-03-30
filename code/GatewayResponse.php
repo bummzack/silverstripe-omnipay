@@ -1,5 +1,7 @@
 <?php
 
+namespace SilverStripe\Omnipay;
+
 // TODO: Split this up into several classes for the different possible responses
 // TODO: Maybe also rename to GatewayServiceResponse, with a Base-Class of AbstractServiceResponse
 // TODO: Some services might just return a 'success' response and nothing omnipay related, since payment process
@@ -14,12 +16,12 @@ class GatewayResponse
 {
 
 	/**
-	 * @var Omnipay\Common\Message\AbstractResponse
+	 * @var \Omnipay\Common\Message\AbstractResponse
 	 */
 	private $response;
 
 	/**
-	 * @var Payment
+	 * @var \Payment
 	 */
 	private $payment;
 
@@ -38,7 +40,7 @@ class GatewayResponse
 	 */
 	private $redirect;
 
-	public function __construct(Payment $payment) {
+	public function __construct(\Payment $payment) {
 		$this->payment = $payment;
 	}
 
@@ -64,16 +66,16 @@ class GatewayResponse
 	}
 
 	/**
-	 * @param Omnipay\Common\Message\AbstractResponse $response
+	 * @param \Omnipay\Common\Message\AbstractResponse $response
 	 */
-	public function setOmnipayResponse(Omnipay\Common\Message\AbstractResponse $response) {
+	public function setOmnipayResponse(\Omnipay\Common\Message\AbstractResponse $response) {
 		$this->response = $response;
 
 		return $this;
 	}
 
 	/**
-	 * @return Omnipay\Common\Message\AbstractResponse
+	 * @return \Omnipay\Common\Message\AbstractResponse
 	 */
 	public function getOmnipayResponse() {
 		return $this->response;
@@ -98,7 +100,7 @@ class GatewayResponse
 	}
 
 	/**
-	 * @return Payment
+	 * @return \Payment
 	 */
 	public function getPayment() {
 		return $this->payment;
@@ -128,21 +130,21 @@ class GatewayResponse
 	 * This redirect can take two forms: A straight URL with payment data transferred as GET parameters,
 	 * or a self-submitting form with payment data transferred through POST.
 	 *
-	 * @return SS_HTTPResponse
+	 * @return \SS_HTTPResponse
 	 */
 	public function redirect() {
 		if($this->response && $this->response->isRedirect()) {
 			// Offsite gateway, use payment response to determine redirection,
 			// either through GET with simep URL, or POST with a self-submitting form.
 			$redirectOmnipayResponse = $this->response->getRedirectResponse();
-			if($redirectOmnipayResponse instanceof Symfony\Component\HttpFoundation\RedirectResponse) {
-				return Controller::curr()->redirect($redirectOmnipayResponse->getTargetUrl());
+			if($redirectOmnipayResponse instanceof \Symfony\Component\HttpFoundation\RedirectResponse) {
+				return \Controller::curr()->redirect($redirectOmnipayResponse->getTargetUrl());
 			} else {
-				return new SS_HTTPResponse((string)$redirectOmnipayResponse->getContent(), 200);
+				return new \SS_HTTPResponse((string)$redirectOmnipayResponse->getContent(), 200);
 			}
 		} else {
 			// Onsite gateway, redirect to application specific "completed" URL
-			return Controller::curr()->redirect($this->getRedirectURL());
+			return \Controller::curr()->redirect($this->getRedirectURL());
 		}
 
 	}

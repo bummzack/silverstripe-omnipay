@@ -1,5 +1,9 @@
 <?php
 
+namespace SilverStripe\Omnipay;
+
+
+
 class AuthorizeService extends PaymentService
 {
     /**
