@@ -45,7 +45,7 @@ class GatewayInfo
     public static function getSupportedGateways($nice = true)
     {
         $allowed = \Payment::config()->allowed_gateways;
-        if (!is_array($allowed)) {
+        if (!is_array($allowed) || empty($allowed)) {
             //include the manual payment type by default, if no gateways are configured
             $allowed = array("Manual");
         }
@@ -100,7 +100,7 @@ class GatewayInfo
         if (self::getConfigSetting($gateway, 'is_offsite')) {
             return true;
         }
-        
+
         $factory = new GatewayFactory();
         $gateway = $factory->create($gateway);
         // Some offsite gateways don't separate between authorize and complete requests,
@@ -228,7 +228,7 @@ class GatewayInfo
             );
         }
 
-        return $fields;
+        return array_unique($fields);
     }
 
     /**
