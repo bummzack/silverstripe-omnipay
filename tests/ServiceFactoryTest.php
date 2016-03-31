@@ -5,50 +5,9 @@ use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
 
 class ServiceFactoryTest extends PaymentTest
 {
-    private $factoryExtensions;
-
     private static $dependencies = array(
         'ServiceFactoryTest_TestService'
     );
-
-    public function setUpOnce()
-    {
-        parent::setUpOnce();
-
-        // remove all extensions applied to ServiceFactory
-        $this->factoryExtensions = Object::get_extensions('ServiceFactory');
-
-        if($this->factoryExtensions){
-            foreach ($this->factoryExtensions as $extension){
-                ServiceFactory::remove_extension($extension);
-            }
-        }
-    }
-
-    public function tearDownOnce()
-    {
-        parent::tearDownOnce();
-
-        // Add removed extensions back once the tests have completed
-        if($this->factoryExtensions){
-            foreach ($this->factoryExtensions as $extension){
-                ServiceFactory::add_extension($extension);
-            }
-        }
-    }
-
-    public function setUp()
-    {
-        parent::setUp();
-
-        // clear existing config
-        Config::inst()->remove('ServiceFactory', 'services');
-
-        Config::inst()->update('ServiceFactory', 'services', array(
-            'authorize' => '\SilverStripe\Omnipay\Service\AuthorizeService',
-            'purchase' => '\SilverStripe\Omnipay\Service\PurchaseService'
-        ));
-    }
 
     /**
      * @expectedException \SilverStripe\Omnipay\Exception\InvalidConfigurationException
