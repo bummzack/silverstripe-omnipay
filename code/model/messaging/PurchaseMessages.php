@@ -12,6 +12,10 @@ class CompletePurchaseRequest extends GatewayRequestMessage
 {
 }
 
+class PurchaseError extends GatewayErrorMessage
+{
+}
+
 class PurchaseRedirectResponse extends GatewayRedirectResponseMessage
 {
 }

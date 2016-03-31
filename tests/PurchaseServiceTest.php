@@ -9,6 +9,7 @@ class PurchaseServiceTest extends PaymentTest {
 
 	public function testDummyOnSitePurchase() {
 		$payment = $this->payment;
+
 		$service = new PurchaseService($payment);
 		$response = $service->initiate(array(
 			'firstName' => 'joe',
@@ -17,12 +18,17 @@ class PurchaseServiceTest extends PaymentTest {
 			'expiryMonth' => '5',
 			'expiryYear' => date("Y", strtotime("+1 year"))
 		));
+
 		$this->assertEquals("Captured", $payment->Status, "is the status updated");
 		$this->assertEquals(1222, $payment->Amount);
 		$this->assertEquals("GBP", $payment->Currency);
 		$this->assertEquals("Dummy", $payment->Gateway);
-		$this->assertTrue($response->isSuccessful());
+		$this->assertTrue($response->getOmnipayResponse()->isSuccessful());
 		$this->assertFalse($response->isRedirect());
+		$this->assertFalse($response->isError());
+		$this->assertFalse($response->isCancelled());
+		$this->assertFalse($response->isAwaitingNotification());
+		$this->assertFalse($response->isNotification());
 
 		//values cannot be changed after successful purchase
 		$payment->Amount = 2;
@@ -54,7 +60,8 @@ class PurchaseServiceTest extends PaymentTest {
 		$this->assertEquals("Created", $payment->Status, "is the status has not been updated");
 		$this->assertEquals(1222, $payment->Amount);
 		$this->assertEquals("GBP", $payment->Currency);
-		$this->assertFalse($response->isSuccessful());
+		$this->assertFalse($response->getOmnipayResponse()->isSuccessful());
+        $this->assertTrue($response->isError());
 		$this->assertFalse($response->isRedirect());
 
 		//check messaging
@@ -75,8 +82,9 @@ class PurchaseServiceTest extends PaymentTest {
 			'expiryMonth' => '5',
 			'expiryYear' => date("Y", strtotime("+1 year"))
 		));
-		$this->assertTrue($response->isSuccessful());
+		$this->assertTrue($response->getOmnipayResponse()->isSuccessful());
 		$this->assertFalse($response->isRedirect());
+		$this->assertFalse($response->isError());
 		$this->assertSame("Captured", $payment->Status, "has the payment been captured");
 
 		//check messaging
@@ -93,8 +101,8 @@ class PurchaseServiceTest extends PaymentTest {
 		$response = $service->initiate(array());
 
 		//check messaging
-		$this->assertFalse($response->isSuccessful()); //payment has not been captured
 		$this->assertFalse($response->isRedirect());
+		$this->assertTrue($response->isError());
 		$this->assertDOSContains(array(
 			array('ClassName' => 'PurchaseError')
 		), $payment->Messages());
@@ -114,8 +122,9 @@ class PurchaseServiceTest extends PaymentTest {
 			'expiryMonth' => '5',
 			'expiryYear' => date("Y", strtotime("+1 year"))
 		));
-		$this->assertFalse($response->isSuccessful()); //payment has not been captured
+		$this->assertFalse($response->getOmnipayResponse()->isSuccessful()); //payment has not been captured
 		$this->assertFalse($response->isRedirect());
+		$this->assertTrue($response->isError());
 		$this->assertSame("Created", $payment->Status);
 
 		//check messaging
@@ -130,20 +139,23 @@ class PurchaseServiceTest extends PaymentTest {
 		$service = new PurchaseService($payment);
 		$this->setMockHttpResponse('paymentexpress/tests/Mock/PxPayPurchaseSuccess.txt');//add success mock response from file
 		$response = $service->initiate();
-		$this->assertFalse($response->isSuccessful()); //payment has not been captured
+		$this->assertFalse($response->getOmnipayResponse()->isSuccessful()); //payment has not been captured
 		$this->assertTrue($response->isRedirect());
+		$this->assertFalse($response->isError()); // this should not be considered to be an error
+
 		$this->assertSame(
 			'https://sec.paymentexpress.com/pxpay/pxpay.aspx?userid=Developer&request=v5H7JrBTzH-4Whs__1iQnz4RGSb9qxRKNR4kIuDP8kIkQzIDiIob9GTIjw_9q_AdRiR47ViWGVx40uRMu52yz2mijT39YtGeO7cZWrL5rfnx0Mc4DltIHRnIUxy1EO1srkNpxaU8fT8_1xMMRmLa-8Fd9bT8Oq0BaWMxMquYa1hDNwvoGs1SJQOAJvyyKACvvwsbMCC2qJVyN0rlvwUoMtx6gGhvmk7ucEsPc_Cyr5kNl3qURnrLKxINnS0trdpU4kXPKOlmT6VacjzT1zuj_DnrsWAPFSFq-hGsow6GpKKciQ0V0aFbAqECN8rl_c-aZWFFy0gkfjnUM4qp6foS0KMopJlPzGAgMjV6qZ0WfleOT64c3E-FRLMP5V_-mILs8a',
-			$response->getRedirectURL());
-		$this->assertSame("PendingCapture", $payment->Status);
+            $response->getTargetUrl());
+		$this->assertSame("PendingPurchase", $payment->Status);
 		//... user would normally be redirected to external gateway at this point ...
 		//mock complete purchase response
 		$this->setMockHttpResponse('paymentexpress/tests/Mock/PxPayCompletePurchaseSuccess.txt');
 		//mock the 'result' get variable into the current request
 		$this->getHttpRequest()->query->replace(array('result' => 'abc123'));
 		$response = $service->complete();
-		$this->assertTrue($response->isSuccessful());
+		$this->assertTrue($response->getOmnipayResponse()->isSuccessful());
 		$this->assertSame("Captured", $payment->Status);
+        $this->assertFalse($response->isError());
 
 		//check messaging
 		$this->assertDOSContains(array(
@@ -159,8 +171,9 @@ class PurchaseServiceTest extends PaymentTest {
 		$service = new PurchaseService($payment);
 		$this->setMockHttpResponse('paymentexpress/tests/Mock/PxPayPurchaseFailure.txt');//add success mock response from file
 		$response = $service->initiate();
-		$this->assertFalse($response->isSuccessful()); //payment has not been captured
+		$this->assertFalse($response->getOmnipayResponse()->isSuccessful()); //payment has not been captured
 		$this->assertFalse($response->isRedirect()); //redirect won't occur, because of failure
+		$this->assertTrue($response->isError());
 		$this->assertSame("Created", $payment->Status);
 
 		//check messaging

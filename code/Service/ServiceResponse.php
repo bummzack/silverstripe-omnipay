@@ -66,6 +66,11 @@ class ServiceResponse
     protected $payment;
 
     /**
+     * @var string
+     */
+    protected $targetUrl;
+
+    /**
      * @var \SS_HTTPResponse
      */
     protected $httpResponse;
@@ -79,9 +84,17 @@ class ServiceResponse
     public function __construct(\Payment $payment)
     {
         $this->payment = $payment;
-        for($i = 1, $len = func_num_args(); $i < $len; $i++){
+        for ($i = 1, $len = func_num_args(); $i < $len; $i++) {
             $this->addFlag(func_get_arg($i));
         }
+    }
+
+    /**
+     * @return \Payment
+     */
+    public function getPayment()
+    {
+        return $this->payment;
     }
 
     /**
@@ -94,15 +107,7 @@ class ServiceResponse
      */
     public function isError()
     {
-        return $this->flags & self::SERVICE_ERROR;
-    }
-
-    /**
-     * @return \Payment
-     */
-    public function getPayment()
-    {
-        return $this->payment;
+        return $this->hasFlag(self::SERVICE_ERROR);
     }
 
     /**
@@ -111,7 +116,7 @@ class ServiceResponse
      */
     public function isAwaitingNotification()
     {
-        return ($this->flags & self::SERVICE_PENDING) > 0;
+        return $this->hasFlag(self::SERVICE_PENDING);
     }
 
     /**
@@ -120,7 +125,7 @@ class ServiceResponse
      */
     public function isNotification()
     {
-        return ($this->flags & self::SERVICE_NOTIFICATION) > 0;
+        return $this->hasFlag(self::SERVICE_NOTIFICATION);
     }
 
     /**
@@ -129,7 +134,7 @@ class ServiceResponse
      */
     public function isRedirect()
     {
-        return ($this->flags & self::SERVICE_REDIRECT) > 0;
+        return $this->hasFlag(self::SERVICE_REDIRECT);
     }
 
     /**
@@ -138,23 +143,36 @@ class ServiceResponse
      */
     public function isCancelled()
     {
-        return ($this->flags & self::SERVICE_CANCELLED) > 0;
+        return $this->hasFlag(self::SERVICE_CANCELLED);
+    }
+
+    /**
+     * Check if the given flag is set (active)
+     * @param int $flag the flag to check
+     * @return bool
+     */
+    public function hasFlag($flag)
+    {
+        if (!is_int($flag)) {
+            throw new \InvalidArgumentException('Flag must be of type int');
+        }
+        return ($this->flags & $flag) > 0;
     }
 
     /**
      * Add a flag for this response.
      * Example: `$r->addFlag(ServiceResponse::SERVICE_REDIRECT)`
      *
-     * @param int $value
+     * @param int $flag
      * @throws \InvalidArgumentException if the parameter is not of type int
      * @return $this
      */
-    public function addFlag($value)
+    public function addFlag($flag)
     {
-        if(!is_int($value)){
+        if (!is_int($flag)) {
             throw new \InvalidArgumentException('Flag must be of type int');
         }
-        $this->flags |= $value;
+        $this->flags |= $flag;
         return $this;
     }
 
@@ -162,16 +180,37 @@ class ServiceResponse
      * Remove a flag from this response.
      * Example: `$r->removeFlag(ServiceResponse::SERVICE_REDIRECT)`
      *
-     * @param int $value
+     * @param int $flag
      * @throws \InvalidArgumentException if the parameter is not of type int
      * @return $this
      */
-    public function removeFlag($value)
+    public function removeFlag($flag)
     {
-        if(!is_int($value)){
+        if (!is_int($flag)) {
             throw new \InvalidArgumentException('Flag must be of type int');
         }
-        $this->flags &= ~$value;
+        $this->flags &= ~$flag;
+        return $this;
+    }
+
+    /**
+     * The target url where this response should redirect to (this will be used to redirect internally, if
+     * the response wasn't set specifically)
+     * @return string
+     */
+    public function getTargetUrl()
+    {
+        return $this->targetUrl;
+    }
+
+    /**
+     * Set the target url
+     * @param string $value the new target url
+     * @return $this
+     */
+    public function setTargetUrl($value)
+    {
+        $this->targetUrl = $value;
         return $this;
     }
 
@@ -196,11 +235,28 @@ class ServiceResponse
     }
 
     /**
+     * Create a redirect or a response. This should be called when the application is ready to redirect!
+     * @return null|\SS_HTTPResponse
+     */
+    public function redirectOrRespond()
+    {
+        if($this->httpResponse){
+            return $this->httpResponse;
+        }
+
+        if($this->targetUrl){
+            return \Controller::curr()->redirect($this->targetUrl);
+        }
+
+        return null;
+    }
+
+    /**
      * Return the HTTP response given by this gateway.
      * This could be a redirect, but might also be a response with content.
      * @return \SS_HTTPResponse
      */
-    public function getHttpPResponse()
+    public function getHttpResponse()
     {
         return $this->httpResponse;
     }

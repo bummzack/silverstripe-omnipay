@@ -80,15 +80,15 @@ class PaymentGatewayController extends \Controller
 		switch ($this->request->param('Status')) {
 			case "complete":
 				$serviceResponse = $service->complete();
-				$response = $serviceResponse->getHttpPResponse();
+				$response = $serviceResponse->redirectOrRespond();
 				break;
 			case "notify":
 				$serviceResponse = $service->complete(array(), true);
-				$response = $serviceResponse->getHttpPResponse();
+				$response = $serviceResponse->redirectOrRespond();
 				break;
 			case "cancel":
                 $serviceResponse = $service->cancel();
-                $response = $serviceResponse->getHttpPResponse();
+                $response = $serviceResponse->redirectOrRespond();
 				break;
 			default:
 				$this->httpError(404, _t("Payment.INVALIDURL", "Invalid payment url."));

@@ -264,65 +264,63 @@ abstract class PaymentService extends \Object
      */
     protected function wrapOmnipayResponse(AbstractResponse $omnipayResponse, $isNotification = false)
     {
-        $httpResponse = null;
-
         if($isNotification){
             $flags = ServiceResponse::SERVICE_NOTIFICATION;
             if (!$omnipayResponse->isSuccessful()) {
                 $flags |= ServiceResponse::SERVICE_ERROR;
             }
-            return $this->generateServiceResponse($flags, $httpResponse, $omnipayResponse);
+            return $this->generateServiceResponse($flags, $omnipayResponse);
         }
 
         $isAsync = GatewayInfo::shouldUseAsyncNotifications($this->payment->Gateway);
         $flags = $isAsync ? ServiceResponse::SERVICE_PENDING : 0;
 
         if($omnipayResponse->isRedirect()){
+            $serviceResponse = $this->generateServiceResponse(($flags | ServiceResponse::SERVICE_REDIRECT), $omnipayResponse);
             $redirectResponse = $omnipayResponse->getRedirectResponse();
             if ($redirectResponse instanceof \Symfony\Component\HttpFoundation\RedirectResponse) {
-                $httpResponse = \Controller::curr()->redirect($redirectResponse->getTargetUrl());
+                $serviceResponse->setTargetUrl($redirectResponse->getTargetUrl());
             } else {
-                $httpResponse = new \SS_HTTPResponse((string)$redirectResponse->getContent(), 200);
+                $serviceResponse->setHttpResponse(
+                    new \SS_HTTPResponse((string)$redirectResponse->getContent(), 200)
+                );
             }
-            $flags |= ServiceResponse::SERVICE_REDIRECT;
+            return $serviceResponse;
         } else if(!$omnipayResponse->isSuccessful() && !$isAsync){
             $flags |= ServiceResponse::SERVICE_ERROR;
         }
 
-        return $this->generateServiceResponse($flags, $httpResponse, $omnipayResponse);
+        return $this->generateServiceResponse($flags, $omnipayResponse);
     }
 
     /**
      * Generate a service response
      * @param int $flags a combination of service flags
-     * @param \SS_HTTPResponse|null $httpResponse explicitly set the HTTP response. If not set, this will default to
-     *  an "OK" response for notifications or a redirect to the return or cancel url.
      * @param AbstractResponse|null $omnipayResponse the response from the Omnipay gateway
      * @return ServiceResponse
      */
     protected function generateServiceResponse(
         $flags,
-        \SS_HTTPResponse $httpResponse = null,
         AbstractResponse $omnipayResponse = null
     ) {
         $response = new ServiceResponse($this->payment, $flags);
-        $response->setOmnipayResponse($omnipayResponse);
-
-        if($httpResponse === null){
-            if($response->isNotification()){
-                $httpResponse = $response->isError()
-                    ? new \SS_HTTPResponse("NOK", 500)
-                    : new \SS_HTTPResponse("OK", 200);
-            } else {
-                $httpResponse = \Controller::curr()->redirect(
-                    ($response->isError() || $response->isCancelled())
-                        ? $this->getCancelUrl()
-                        : $this->getReturnUrl()
-                );
-            }
+        if($omnipayResponse){
+            $response->setOmnipayResponse($omnipayResponse);
         }
 
-        $response->setHttpResponse($httpResponse);
+        if($response->isNotification()){
+            $httpResponse = $response->isError()
+                ? new \SS_HTTPResponse("NOK", 500)
+                : new \SS_HTTPResponse("OK", 200);
+
+            $response->setHttpResponse($httpResponse);
+        } else {
+            $response->setTargetUrl(
+                ($response->isError() || $response->isCancelled())
+                    ? $this->getCancelUrl()
+                    : $this->getReturnUrl()
+            );
+        }
 
         // Hook to update service response via extensions. This can be used to customize the service response
         $this->extend('updateServiceResponse', $response);
