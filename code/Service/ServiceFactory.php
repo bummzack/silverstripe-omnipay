@@ -62,7 +62,6 @@ class ServiceFactory extends \Object
      */
     public function getService(\Payment $payment, $intent)
     {
-
         $method = 'create' . ucfirst($intent) . 'Service';
 
         $values = $this->extend($method, $payment);
@@ -70,7 +69,7 @@ class ServiceFactory extends \Object
             throw new InvalidConfigurationException("Multiple extensions are trying to create a service for '$intent'");
         }
 
-        if (count($values) == 1 && $values[0] instanceof PaymentService) {
+        if (count($values) === 1 && $values[0] instanceof PaymentService) {
             return $values[0];
         }
 
@@ -82,11 +81,10 @@ class ServiceFactory extends \Object
 
         if (is_array($serviceMap) && isset($serviceMap[$intent])) {
             $serviceType = $serviceMap[$intent];
-            if ($serviceType instanceof PaymentService) {
+            if (is_subclass_of($serviceType, '\SilverStripe\Omnipay\Service\PaymentService')) {
                 return $serviceType::create($payment);
             }
         }
-
 
         throw new InvalidConfigurationException("Unable to create a service for '$intent'");
     }

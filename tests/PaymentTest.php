@@ -24,6 +24,8 @@ abstract class PaymentTest extends FunctionalTest{
 			'Dummy'
 		);
 
+        // clear settings for PaymentExpress_PxPay (don't let user configs bleed into tests)
+        Config::inst()->remove('GatewayInfo', 'PaymentExpress_PxPay');
         Config::inst()->update('GatewayInfo', 'PaymentExpress_PxPay', array(
            'parameters' => array(
                 'username' => 'EXAMPLEUSER',
