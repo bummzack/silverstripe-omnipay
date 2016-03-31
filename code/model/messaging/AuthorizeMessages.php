@@ -1,22 +1,26 @@
 <?php
 
-class AuthorizeRequest extends GatewayRequestMessage{
-
-}
-class AuthorizedResponse extends GatewayResponseMessage{
-
-}
-class AuthorizeRedirectResponse extends GatewayRedirectResponseMessage{
-
-}
-class AuthorizeError extends GatewayErrorMessage{
-
+class AuthorizeRequest extends GatewayRequestMessage
+{
 }
 
-class CompleteAuthorizeRequest extends GatewayRequestMessage{
-
+class AuthorizedResponse extends GatewayResponseMessage
+{
 }
+
+class AuthorizeRedirectResponse extends GatewayRedirectResponseMessage
+{
+}
+
+class AuthorizeError extends GatewayErrorMessage
+{
+}
+
+class CompleteAuthorizeRequest extends GatewayRequestMessage
+{
+}
+
 //AuthorizedResponse
-class CompleteAuthorizeError extends GatewayErrorMessage{
-
+class CompleteAuthorizeError extends GatewayErrorMessage
+{
 }

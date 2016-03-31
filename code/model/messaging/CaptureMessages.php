@@ -1,11 +1,13 @@
 <?php
 
-class CaptureRequest extends GatewayRequestMessage{
-
+class CaptureRequest extends GatewayRequestMessage
+{
 }
-class CapturedResponse extends GatewayResponseMessage{
 
+class CapturedResponse extends GatewayResponseMessage
+{
 }
-class CaptureError extends GatewayErrorMessage{
 
+class CaptureError extends GatewayErrorMessage
+{
 }

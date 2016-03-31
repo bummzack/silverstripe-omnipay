@@ -41,6 +41,11 @@ class ServiceResponse
     const SERVICE_NOTIFICATION = 8;
 
     /**
+     * Flag to mark this response as a cancelled payment
+     */
+    const SERVICE_CANCELLED = 16;
+
+    /**
      * @var \Omnipay\Common\Message\ResponseInterface
      */
     protected $omnipayResponse;
@@ -125,6 +130,15 @@ class ServiceResponse
     public function isRedirect()
     {
         return ($this->flags & self::SERVICE_REDIRECT) > 0;
+    }
+
+    /**
+     * Whether or not the payment was cancelled
+     * @return bool
+     */
+    public function isCancelled()
+    {
+        return ($this->flags & self::SERVICE_CANCELLED) > 0;
     }
 
     /**

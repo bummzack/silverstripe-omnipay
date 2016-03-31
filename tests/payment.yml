@@ -10,7 +10,7 @@ Payment:
     Gateway: PaymentExpress_PxPay
     MoneyAmount: 1234.56
     MoneyCurrency: USD
-    Status: Authorized
+    Status: PendingAuthorization
     Identifier: UNIQUEHASH23q5123tqasdf
   payment3:
     Gateway: PaymentExpress_PxPay

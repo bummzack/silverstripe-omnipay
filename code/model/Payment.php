@@ -15,7 +15,7 @@ final class Payment extends DataObject{
 	private static $db = array(
 		'Gateway' => 'Varchar(50)', //this is the omnipay 'short name'
 		'Money' => 'Money', //contains Amount and Currency
-        'Status' => "Enum('Created,PendingAuthorization,Authorized,PendingCapture,Captured,PendingRefund,Refunded,PendingVoid,Void','Created')",
+        'Status' => "Enum('Created,PendingAuthorization,Authorized,PendingPurchase,PendingCapture,Captured,PendingRefund,Refunded,PendingVoid,Void','Created')",
 		'Identifier' => 'Varchar'
 	);
 
@@ -184,6 +184,18 @@ final class Payment extends DataObject{
 			$this->Status == 'Refunded' ||
 			$this->Status == 'Void';
 	}
+
+    /**
+     * Get a message of a given type
+     * @param $type
+     * @return mixed
+     */
+    public function getLatestMessageOfType($type)
+    {
+        return $this->Messages()
+            ->filter("ClassName", $type)
+            ->first();
+    }
 
 	/**
 	 * Check the payment is captured.

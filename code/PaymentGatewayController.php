@@ -1,7 +1,7 @@
 <?php
 
 namespace SilverStripe\Omnipay;
-use SilverStripe\Omnipay\Service\PurchaseService;
+use SilverStripe\Omnipay\Service\ServiceFactory;
 
 /**
  * Payment Gateway Controller
@@ -50,46 +50,48 @@ class PaymentGatewayController extends \Controller
 	 * or allowed to be updated.
 	 */
 	public function index() {
+        $response = null;
 		$payment = $this->getPayment();
+
 		if (!$payment) {
-			return $this->httpError(404, _t("Payment.NOTFOUND", "Payment could not be found."));
+			$this->httpError(404, _t("Payment.NOTFOUND", "Payment could not be found."));
+            return $response;
 		}
 
-		//isolate the gateway request message containing success / failure urls
-		$message = $payment->Messages()
-			->filter("ClassName", array("PurchaseRequest","AuthorizeRequest"))
-			->first();
+        $intent = null;
+        switch ($payment->Status){
+            case 'PendingAuthorization':
+                $intent = ServiceFactory::INTENT_AUTHORIZE;
+                break;
+            case 'PendingCapture':
+                $intent = ServiceFactory::INTENT_CAPTURE;
+                break;
+            case 'PendingPurchase':
+                $intent = ServiceFactory::INTENT_PURCHASE;
+                break;
+            default:
+                $this->httpError(404, _t('Payment.InvalidStatus', 'Invalid/unhandled payment status'));
+                return $response;
+        }
 
-		$service = PurchaseService::create($payment);
-
-		//redirect if payment is already a success
-		if ($payment->isComplete()) {
-			return $this->redirect($this->getSuccessUrl($message));
-		}
+		$service = ServiceFactory::inst()->getService($payment, $intent);
 
 		//do the payment update
-		$response = null;
 		switch ($this->request->param('Status')) {
 			case "complete":
 				$serviceResponse = $service->complete();
-				if($serviceResponse->isSuccessful()){
-					$response = $this->redirect($this->getSuccessUrl($message));
-				} else {
-					$response = $this->redirect($this->getFailureUrl($message));
-				}
+				$response = $serviceResponse->getHttpPResponse();
 				break;
 			case "notify":
 				$serviceResponse = $service->complete(array(), true);
-				// Allow implementations where no redirect happens,
-				// since gateway failsafe callbacks might expect a 2xx HTTP response
-				$response = new \SS_HTTPResponse('', 200);
+				$response = $serviceResponse->getHttpPResponse();
 				break;
 			case "cancel":
-				//TODO: store cancellation message / void payment
-				$response = $this->redirect($this->getFailureUrl($message));
+                $serviceResponse = $service->cancel();
+                $response = $serviceResponse->getHttpPResponse();
 				break;
 			default:
-				$response = $this->httpError(404, _t("Payment.INVALIDURL", "Invalid payment url."));
+				$this->httpError(404, _t("Payment.INVALIDURL", "Invalid payment url."));
 		}
 
 		return $response;
@@ -97,7 +99,7 @@ class PaymentGatewayController extends \Controller
 
 	/**
 	 * Get the the payment according to the identifer given in the url
-	 * @return \Payament the payment
+	 * @return \Payment the payment
 	 */
 	private function getPayment() {
 		return \Payment::get()
@@ -105,23 +107,4 @@ class PaymentGatewayController extends \Controller
 				->filter('Identifier:not', "")
 				->first();
 	}
-
-	/**
-	 * Get the success url to redirect to.
-	 * If a url hasn't been stored, then redirect to base url.
-	 * @return string the url
-	 */
-	private function getSuccessUrl($message) {
-		return $message->SuccessURL ? $message->SuccessURL : \Director::baseURL();
-	}
-
-	/**
-	 * Get the failure url to redirect to.
-	 * If a url hasn't been stored, then redirect to base url.
-	 * @return string the url
-	 */
-	private function getFailureUrl($message) {
-		return $message->FailureURL ? $message->FailureURL : \Director::baseURL();
-	}
-
 }

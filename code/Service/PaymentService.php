@@ -159,6 +159,21 @@ abstract class PaymentService extends \Object
     abstract function complete($data = array(), $isNotification = false);
 
     /**
+     * Cancel a payment
+     * @return ServiceResponse
+     */
+    public function cancel()
+    {
+        if (!$this->payment->IsComplete()) {
+            $this->payment->Status = 'Void';
+            $this->payment->write();
+            $this->payment->extend('onCancelled');
+        }
+
+        return $this->generateServiceResponse(ServiceResponse::SERVICE_CANCELLED);
+    }
+
+    /**
      * Get the omnipay gateway associated with this payment,
      * with configuration applied.
      *
@@ -203,9 +218,9 @@ abstract class PaymentService extends \Object
             'amount' => (float)$this->payment->MoneyAmount,
             'currency' => $this->payment->MoneyCurrency,
             //set all gateway return/cancel/notify urls to PaymentGatewayController endpoint
-            'returnUrl' => $this->getEndpointURL("complete", $this->payment->Identifier),
-            'cancelUrl' => $this->getEndpointURL("cancel", $this->payment->Identifier),
-            'notifyUrl' => $this->getEndpointURL("notify", $this->payment->Identifier)
+            'returnUrl' => $this->getEndpointUrl("complete"),
+            'cancelUrl' => $this->getEndpointUrl("cancel"),
+            'notifyUrl' => $this->getEndpointUrl("notify")
         ));
 
         // Often, the shop will want to pass in a transaction ID (order #, etc), but if there's
@@ -233,11 +248,12 @@ abstract class PaymentService extends \Object
 
     /**
      * Generate a return/notify url for off-site gateways (completePayment).
+     * @param string $action the action to call on the endpoint (complete, notify or cancel)
      * @return string endpoint url
      */
-    protected function getEndpointURL($action, $identifier)
+    protected function getEndpointUrl($action)
     {
-        return PaymentGatewayController::getEndpointUrl($action, $identifier);
+        return PaymentGatewayController::getEndpointUrl($action, $this->payment->Identifier);
     }
 
     /**
@@ -299,7 +315,7 @@ abstract class PaymentService extends \Object
                     : new \SS_HTTPResponse("OK", 200);
             } else {
                 $httpResponse = \Controller::curr()->redirect(
-                    $response->isError()
+                    ($response->isError() || $response->isCancelled())
                         ? $this->getCancelUrl()
                         : $this->getReturnUrl()
                 );

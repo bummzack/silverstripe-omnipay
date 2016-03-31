@@ -8,7 +8,35 @@ use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
 
 class PurchaseService extends PaymentService
 {
-	/**
+    /**
+     * If the return URL wasn't explicitly set, get it from the last PurchaseRequest message
+     * @return string
+     */
+    public function getReturnUrl()
+    {
+        $value = parent::getReturnUrl();
+        $msg = $this->payment->getLatestMessageOfType('PurchaseRequest');
+        if (!$value) {
+            $value = $msg ? $msg->SuccessURL : \Director::baseURL();
+        }
+        return $value;
+    }
+
+    /**
+     * If the cancel URL wasn't explicitly set, get it from the last PurchaseRequest message
+     * @return string
+     */
+    public function getCancelUrl()
+    {
+        $value = parent::getCancelUrl();
+        $msg = $this->payment->getLatestMessageOfType('PurchaseRequest');
+        if (!$value) {
+            $value = $msg ? $msg->FailureURL : \Director::baseURL();
+        }
+        return $value;
+    }
+    
+    /**
 	 * Attempt to make a payment.
 	 *
 	 * @inheritdoc
@@ -59,7 +87,7 @@ class PurchaseService extends PaymentService
         $serviceResponse = $this->wrapOmnipayResponse($response);
 
         if ($serviceResponse->isRedirect() || $serviceResponse->isAwaitingNotification()) {
-            $this->payment->Status = 'PendingCapture';
+            $this->payment->Status = 'PendingPurchase';
             $this->payment->write();
 
             $this->createMessage(
@@ -91,8 +119,8 @@ class PurchaseService extends PaymentService
             return $this->generateServiceResponse($flags);
         }
 
-        if(!$this->payment->Status === 'PendingCapture'){
-            throw new InvalidStateException('Cannot capture a purchase with this payment. Status is not "PendingCapture"');
+        if(!$this->payment->Status === 'PendingPurchase'){
+            throw new InvalidStateException('Cannot capture a purchase with this payment. Status is not "PendingPurchase"');
         }
 
         $gateway = $this->oGateway();
