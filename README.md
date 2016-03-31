@@ -38,8 +38,8 @@ This module is a complete rewrite of the past Payment module. It is not backward
 
 ## Compatible Payment Gateways
 
-There are many gateways the come [out of the box](https://github.com/thephpleague/omnipay/tree/1.1#payment-gateways).
-Note that currently this module uses version 1.1 of the ominpay library. Most gateways are packaged with the core library, some you can find seperate. Once we switch to version 2 of the omnipay library, all gateways will be seperate.
+There are many [gateways](https://github.com/thephpleague/omnipay#payment-gateways) available, which you can install separately.
+Note that currently this module uses version 2.x of the Ominpay library.
 
 Searching packagist is useful: https://packagist.org/search/?q=omnipay
 

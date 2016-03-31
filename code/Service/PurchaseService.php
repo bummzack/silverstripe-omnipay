@@ -3,9 +3,13 @@
 namespace SilverStripe\Omnipay\Service;
 
 
+use Omnipay\Common\Message\AbstractResponse;
+use Omnipay\Common\Message\RedirectResponseInterface;
 use SilverStripe\Omnipay\Exception\InvalidStateException;
 use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
 use SilverStripe\Omnipay\GatewayResponse;
+use SilverStripe\Omnipay\Service\Response\RedirectResponse;
+use SilverStripe\Omnipay\Service\Response\SuccessResponse;
 
 class PurchaseService extends PaymentService
 {
@@ -31,12 +35,13 @@ class PurchaseService extends PaymentService
 
         $gateway = $this->oGateway();
         if(!$gateway->supportsPurchase()){
-            //TODO: Throw exception?
-            return null;
+            throw new InvalidConfigurationException(
+                sprintf('The gateway "%s" doesn\'t support purchase', $this->payment->Gateway)
+            );
         }
 
 		//update success/fail urls
-		$this->update($data);
+		//$this->update($data);
 
         $gatewayData = $this->gatherGatewayData($data);
 
@@ -45,56 +50,61 @@ class PurchaseService extends PaymentService
         $this->extend('onAfterPurchase', $request);
 
         $message = $this->createMessage('PurchaseRequest', $request);
-		$message->SuccessURL = $this->returnurl;
-		$message->FailureURL = $this->cancelurl;
+		$message->SuccessURL = $this->returnUrl;
+		$message->FailureURL = $this->cancelUrl;
 		$message->write();
 
-		$gatewayResponse = $this->createGatewayResponse();
-		try {
-			$response = $this->response = $request->send();
-            $this->extend('onAfterSendPurchase', $request, $response);
-            $gatewayResponse->setOmnipayResponse($response);
-			//update payment model
-			if ($response->isSuccessful()) {
-                $this->completePayment($gatewayResponse);
-			} elseif ($response->isRedirect()) {
-				// redirect to off-site payment gateway
-				$this->createMessage('PurchaseRedirectResponse', $response);
-				$this->payment->Status = 'PendingCapture';
-				$this->payment->write();
-                $gatewayResponse->setMessage("Redirecting to gateway");
-			} else {
-				//handle error
-				$this->createMessage('PurchaseError', $response);
-                $gatewayResponse->setMessage(
-					"Error (".$response->getCode()."): ".$response->getMessage()
-				);
-			}
-		} catch (\Omnipay\Common\Exception\OmnipayException $e) {
-			$this->createMessage('PurchaseError', $e);
-            $gatewayResponse->setMessage($e->getMessage());
-		}
+        try {
+            $response = $this->response = $request->send();
+        } catch (\Omnipay\Common\Exception\OmnipayException $e) {
+            $this->createMessage('PurchaseError', $e);
+            return $this->getErrorResponse($this->response, $e->getMessage());
+        }
 
-        $gatewayResponse->setRedirectURL($this->getRedirectURL());
+        $this->extend('onAfterSendPurchase', $request, $response);
 
-		return $gatewayResponse;
+        // check for a redirect.
+        if ($response instanceof RedirectResponseInterface && $response->isRedirect()) {
+            $this->createMessage('PurchaseRedirectResponse', $response);
+            $this->payment->Status = 'PendingCapture';
+            $this->payment->write();
+
+            // redirect to off-site payment gateway
+            $redirectResponse = new RedirectResponse($this->payment, $response);
+            $redirectResponse->setMessage("Redirecting to gateway");
+            return $redirectResponse;
+        }
+
+        // check for success. We can complete the payment if the gateway returned success
+        if ($response->isSuccessful()) {
+            return $this->completePayment($response);
+        }
+
+        // Leaves us with the error case
+        $this->createMessage('PurchaseError', $response);
+        return $this->getErrorResponse($response, "Error (".$response->getCode()."): ".$response->getMessage());
 	}
 
 	/**
 	 * Finalise this payment, after off-site external processing.
-	 * This is ususally only called by PaymentGatewayController.
+	 * This is usually only called by PaymentGatewayController.
 	 * @inheritdoc
 	 */
     public function complete($data = array(), $isNotification = false)
     {
+        // The payment is already captured
         if($this->payment->Status === 'Captured'){
+            if($isNotification){
+
+            }
             return null;
         }
 
         $gateway = $this->oGateway();
         if (!$gateway->supportsCompletePurchase()) {
-            //TODO: Throw exception?
-            return null;
+            throw new InvalidConfigurationException(
+                sprintf('The gateway "%s" doesn\'t support completePurchase', $this->payment->Gateway)
+            );
         }
 
         $gatewayResponse = $this->createGatewayResponse();
@@ -123,13 +133,18 @@ class PurchaseService extends PaymentService
 		return $gatewayResponse;
 	}
 
-    protected function completePayment(GatewayResponse $gwResponse)
+    protected function completePayment(AbstractResponse $gwResponse)
     {
-        $gwResponse->setMessage("Payment successful");
-        $this->createMessage('PurchasedResponse', $gwResponse->getOmnipayResponse());
+        $this->createMessage('PurchasedResponse', $gwResponse);
         $this->payment->Status = 'Captured';
         $this->payment->write();
-        $this->payment->extend('onCaptured', $gwResponse);
+
+        $response = new SuccessResponse($this->payment, $gwResponse);
+        $response->setMessage('Payment successful');
+
+        $this->payment->extend('onCaptured', $response);
+
+        return $response;
     }
 
     /**

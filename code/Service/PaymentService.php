@@ -5,7 +5,8 @@ namespace SilverStripe\Omnipay\Service;
 
 use SilverStripe\Omnipay\GatewayInfo;
 use SilverStripe\Omnipay\PaymentGatewayController;
-use SilverStripe\Omnipay\GatewayResponse;
+use SilverStripe\Omnipay\Service\Response\ErrorResponse;
+use SilverStripe\Omnipay\Service\Response\ServiceResponse;
 use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
 use SilverStripe\Omnipay\Exception\InvalidStateException;
 use Guzzle\Http\ClientInterface;
@@ -29,127 +30,120 @@ use Symfony\Component\HttpFoundation\Request;
  */
 abstract class PaymentService extends \Object
 {
-	/**
-	 * @var \Guzzle\Http\ClientInterface
-	 */
-	private static $httpclient;
+    /**
+     * @var \Guzzle\Http\ClientInterface
+     */
+    private static $httpClient;
 
-	/**
-	 * @var \Symfony\Component\HttpFoundation\Request
-	 */
-	private static $httprequest;
+    /**
+     * @var \Symfony\Component\HttpFoundation\Request
+     */
+    private static $httpRequest;
 
-	/**
-	 * @var \Payment
-	 */
-	protected $payment;
+    /**
+     * @var \Payment
+     */
+    protected $payment;
 
-	/**
-	 * @var String
-	 */
-	protected $returnurl;
+    /**
+     * @var String
+     */
+    protected $returnUrl;
 
-	/**
-	 * @var String
-	 */
-	protected $cancelurl;
+    /**
+     * @var String
+     */
+    protected $cancelUrl;
 
-	/**
-	 * @var \Guzzle\Http\Message\Response
-	 */
-	protected $response;
+    /**
+     * @var AbstractResponse
+     */
+    protected $response;
 
     /**
      * @var GatewayFactory
      */
-	protected $gatewayFactory;
+    protected $gatewayFactory;
 
-	private static $dependencies = array(
-		'gatewayFactory' => '%$\Omnipay\Common\GatewayFactory',
-	);
+    private static $dependencies = array(
+        'gatewayFactory' => '%$\Omnipay\Common\GatewayFactory',
+    );
 
 
     /**
      * @param \Payment
      */
-	public function __construct(\Payment $payment) {
-		parent::__construct();
-		$this->payment = $payment;
-	}
+    public function __construct(\Payment $payment)
+    {
+        parent::__construct();
+        $this->payment = $payment;
+    }
 
-	/**
-	 * Get the url to return to, that has been previously stored.
-	 * This is not a database field.
-	 * @return string the url
-	 */
-	public function getReturnUrl() {
-		return $this->returnurl;
-	}
+    /**
+     * Get the url to return to, that has been previously stored.
+     * This is not a database field.
+     * @return string the url
+     */
+    public function getReturnUrl()
+    {
+        return $this->returnUrl;
+    }
 
-	/**
-	 * Set the url to redirect to after payment is made/attempted.
-	 * This function also populates the cancel url, if it is empty.
-	 * @return PaymentService this object for chaining
-	 */
-	public function setReturnUrl($url) {
-		$this->returnurl = $url;
-		if (!$this->cancelurl) {
-			$this->cancelurl = $url;
-		}
+    /**
+     * Set the url to redirect to after payment is made/attempted.
+     * This function also populates the cancel url, if it is empty.
+     * @return $this this object for chaining
+     */
+    public function setReturnUrl($url)
+    {
+        $this->returnUrl = $url;
+        if (!$this->cancelUrl) {
+            $this->cancelUrl = $url;
+        }
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * @return string cancel url
-	 */
-	public function getCancelUrl() {
-		return $this->cancelurl;
-	}
+    /**
+     * @return string cancel url
+     */
+    public function getCancelUrl()
+    {
+        return $this->cancelUrl;
+    }
 
-	/**
-	 * Set the url to redirect to after payment is cancelled
-	 * @return PaymentService this object for chaining
-	 */
-	public function setCancelUrl($url) {
-		$this->cancelurl = $url;
+    /**
+     * Set the url to redirect to after payment is cancelled
+     * @return $this this object for chaining
+     */
+    public function setCancelUrl($url)
+    {
+        $this->cancelUrl = $url;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Get the appropriate redirect url
-	 */
-	public function getRedirectURL() {
-		if ($this->response) {
-			if ($this->response->isSuccessful()) {
-				return $this->getReturnUrl();
-			} elseif ($this->response->isRedirect()) {
-				return $this->response->getRedirectUrl();
-			}
-		}
-
-		return $this->getCancelUrl();
-	}
-
-	/**
-	 * Update class properties via array.
-	 */
-	public function update($data) {
-		if(isset($data['returnUrl'])){
-			$this->setReturnUrl($data['returnUrl']);
-		}
-		if(isset($data['cancelUrl'])){
-			$this->setCancelUrl($data['cancelUrl']);
-		}
-	}
+    /**
+     * Update class properties via array.
+     */
+    /*
+    public function update($data)
+    {
+        if (isset($data['returnUrl'])) {
+            $this->setReturnUrl($data['returnUrl']);
+        }
+        if (isset($data['cancelUrl'])) {
+            $this->setCancelUrl($data['cancelUrl']);
+        }
+    }
+    */
 
     /**
      * Initiate a gateway request with some user/application supplied data.
      * @param array $data payment data
      * @throws InvalidStateException when the payment is in a state that prevents running `complete`
      * @throws InvalidConfigurationException when there's a misconfiguration in the module itself
-     * @return GatewayResponse the gateway response (wrapped)
+     * @return ServiceResponse the service response
      */
     abstract function initiate($data = array());
 
@@ -161,32 +155,33 @@ abstract class PaymentService extends \Object
      * @param bool $isNotification whether or not this was called from a notification callback (async). Defaults to false
      * @throws InvalidStateException when the payment is in a state that prevents running `complete`
      * @throws InvalidConfigurationException when there's a misconfiguration in the module itself
-     * @return GatewayResponse the gateway response (wrapped)
+     * @return ServiceResponse the service response
      */
     abstract function complete($data = array(), $isNotification = false);
 
-	/**
-	 * Get the omnipay gateway associated with this payment,
-	 * with configuration applied.
-	 *
-	 * @throws \RuntimeException - when gateway doesn't exist.
-	 * @return AbstractGateway omnipay gateway class
-	 */
-	public function oGateway() {
+    /**
+     * Get the omnipay gateway associated with this payment,
+     * with configuration applied.
+     *
+     * @throws \RuntimeException - when gateway doesn't exist.
+     * @return AbstractGateway omnipay gateway class
+     */
+    public function oGateway()
+    {
         $gatewayName = $this->payment->Gateway;
-		$gateway = $this->getGatewayFactory()->create(
+        $gateway = $this->getGatewayFactory()->create(
             $gatewayName,
-			self::$httpclient,
-			self::$httprequest
-		);
+            self::$httpClient,
+            self::$httpRequest
+        );
 
-		$parameters = GatewayInfo::getParameters($gatewayName);
-		if (is_array($parameters)) {
-			$gateway->initialize($parameters);
-		}
+        $parameters = GatewayInfo::getParameters($gatewayName);
+        if (is_array($parameters)) {
+            $gateway->initialize($parameters);
+        }
 
-		return $gateway;
-	}
+        return $gateway;
+    }
 
     /**
      * Collect common data parameters to pass to the gateway.
@@ -201,12 +196,12 @@ abstract class PaymentService extends \Object
     protected function gatherGatewayData($data = array(), $includeCardOrToken = true)
     {
         //set the client IP address, if not already set
-        if(!isset($data['clientIp'])){
+        if (!isset($data['clientIp'])) {
             $data['clientIp'] = \Controller::curr()->getRequest()->getIP();
         }
 
         $gatewaydata = array_merge($data, array(
-            'amount' => (float) $this->payment->MoneyAmount,
+            'amount' => (float)$this->payment->MoneyAmount,
             'currency' => $this->payment->MoneyCurrency,
             //set all gateway return/cancel/notify urls to PaymentGatewayController endpoint
             'returnUrl' => $this->getEndpointURL("complete", $this->payment->Identifier),
@@ -216,11 +211,11 @@ abstract class PaymentService extends \Object
 
         // Often, the shop will want to pass in a transaction ID (order #, etc), but if there's
         // not one we need to set it as Ominpay requires this.
-        if(!isset($gatewaydata['transactionId'])){
+        if (!isset($gatewaydata['transactionId'])) {
             $gatewaydata['transactionId'] = $this->payment->Identifier;
         }
 
-        if($includeCardOrToken){
+        if ($includeCardOrToken) {
             // We only look for a card if we aren't already provided with a token
             // Increasingly we can expect tokens or nonce's to be more common (e.g. Stripe and Braintree)
             $tokenKey = GatewayInfo::getTokenKey($this->payment->Gateway);
@@ -237,127 +232,140 @@ abstract class PaymentService extends \Object
         return $gatewaydata;
     }
 
-	/**
-	 * Generate a return/notify url for off-site gateways (completePayment).
-	 * @return string endpoint url
-	 */
-	protected function getEndpointURL($action, $identifier) {
-		return PaymentGatewayController::getEndpointUrl($action, $identifier);
-	}
+    /**
+     * Generate a return/notify url for off-site gateways (completePayment).
+     * @return string endpoint url
+     */
+    protected function getEndpointURL($action, $identifier)
+    {
+        return PaymentGatewayController::getEndpointUrl($action, $identifier);
+    }
 
-	/**
-	 * Record a transaction on this for this payment.
-	 * @param string $type the type of transaction to create.
-	 *        This is any class that is (or extends) PaymentMessage.
-	 * @param array|string|AbstractResponse|AbstractRequest|OmnipayException $data the response to record, or data to store
-	 * @return \GatewayTransaction newly created dataobject, saved to database.
-	 */
-	protected function createMessage($type, $data = null) {
-		$output = array();
-		if (is_string($data)) {
-			$output =  array(
-				'Message' => $data
-			);
-		} elseif (is_array($data)) {
-			$output = $data;
-		} elseif ($data instanceof OmnipayException) {
-			$output = array(
-				"Message" => $data->getMessage(),
-				"Code" => $data->getCode(),
-				"Exception" => get_class($data),
-				"Backtrace" => $data->getTraceAsString()
-			);
-		} elseif ($data instanceof AbstractResponse) {
-			$output =  array(
-				"Message" => $data->getMessage(),
-				"Code" => $data->getCode(),
-				"Reference" => $data->getTransactionReference(),
-				"Data" => $data->getData()
-			);
-		} elseif ($data instanceof AbstractRequest) {
-			$output = array(
-				'Token' => $data->getToken(),
-				'CardReference' => $data->getCardReference(),
-				'Amount' => $data->getAmount(),
-				'Currency' => $data->getCurrency(),
-				'Description' => $data->getDescription(),
-				'TransactionId' => $data->getTransactionId(),
-				'TransactionReference' => $data->getTransactionReference(),
-				'ClientIp' => $data->getClientIp(),
-				'ReturnUrl' => $data->getReturnUrl(),
-				'CancelUrl' => $data->getCancelUrl(),
-				'NotifyUrl' => $data->getNotifyUrl(),
-				'Parameters' => $data->getParameters()
-			);
-		}
-		$output = array_merge($output, array(
-			"PaymentID" => $this->payment->ID,
-			"Gateway" => $this->payment->Gateway
-		));
-		$this->logToFile($output, $type);
-		$message = $type::create($output);
-		$message->write();
-		$this->payment->Messages()->add($message);
+    /**
+     * Get a service error response.
+     * @param AbstractResponse $omnipayResponse
+     * @param string $message
+     * @return ErrorResponse
+     */
+    protected function getErrorResponse(AbstractResponse $omnipayResponse, $message)
+    {
+        $response = new ErrorResponse($this->payment, $omnipayResponse);
+        $response->setMessage($message);
+        return $response;
+    }
 
-		return $message;
-	}
+    /**
+     * Record a transaction on this for this payment.
+     * @param string $type the type of transaction to create.
+     *        This is any class that is (or extends) PaymentMessage.
+     * @param array|string|AbstractResponse|AbstractRequest|OmnipayException $data the response to record, or data to store
+     * @return \PaymentMessage newly created DataObject, saved to database.
+     */
+    protected function createMessage($type, $data = null)
+    {
+        $output = array();
+        if (is_string($data)) {
+            $output = array(
+                'Message' => $data
+            );
+        } elseif (is_array($data)) {
+            $output = $data;
+        } elseif ($data instanceof OmnipayException) {
+            $output = array(
+                "Message" => $data->getMessage(),
+                "Code" => $data->getCode(),
+                "Exception" => get_class($data),
+                "Backtrace" => $data->getTraceAsString()
+            );
+        } elseif ($data instanceof AbstractResponse) {
+            $output = array(
+                "Message" => $data->getMessage(),
+                "Code" => $data->getCode(),
+                "Reference" => $data->getTransactionReference(),
+                "Data" => $data->getData()
+            );
+        } elseif ($data instanceof AbstractRequest) {
+            $output = array(
+                'Token' => $data->getToken(),
+                'CardReference' => $data->getCardReference(),
+                'Amount' => $data->getAmount(),
+                'Currency' => $data->getCurrency(),
+                'Description' => $data->getDescription(),
+                'TransactionId' => $data->getTransactionId(),
+                'TransactionReference' => $data->getTransactionReference(),
+                'ClientIp' => $data->getClientIp(),
+                'ReturnUrl' => $data->getReturnUrl(),
+                'CancelUrl' => $data->getCancelUrl(),
+                'NotifyUrl' => $data->getNotifyUrl(),
+                'Parameters' => $data->getParameters()
+            );
+        }
+        $output = array_merge($output, array(
+            "PaymentID" => $this->payment->ID,
+            "Gateway" => $this->payment->Gateway
+        ));
+        $this->logToFile($output, $type);
+        $message = $type::create($output);
+        $message->write();
+        $this->payment->Messages()->add($message);
 
-	/**
-	 * Helper function for logging gateway requests
-	 */
-	protected function logToFile($data, $type = "") {
-		if($logstyle = \Payment::config()->file_logging){
-			$title = $type." (".$this->payment->Gateway.")";
-			if ($logstyle === "verbose") {
-				\Debug::log(
-					$title."\n\n".
-					print_r($data, true)
-				);
-			} elseif($logstyle) {
-				\Debug::log(implode(", ", array(
-					$title,
-					isset($data['Message']) ? $data['Message'] : " ",
-					isset($data['Code']) ? $data['Code'] : " ",
-				)));
-			}
-		}
-	}
+        return $message;
+    }
 
-	protected function createGatewayResponse() {
-		$gatewayresponse = new GatewayResponse($this->payment);
-		$gatewayresponse->setRedirectURL($this->getRedirectURL());
-		return $gatewayresponse;
-	}
+    /**
+     * Helper function for logging gateway requests
+     */
+    protected function logToFile($data, $type = "")
+    {
+        if ($logstyle = \Payment::config()->file_logging) {
+            $title = $type . " (" . $this->payment->Gateway . ")";
+            if ($logstyle === "verbose") {
+                \Debug::log(
+                    $title . "\n\n" .
+                    print_r($data, true)
+                );
+            } elseif ($logstyle) {
+                \Debug::log(implode(", ", array(
+                    $title,
+                    isset($data['Message']) ? $data['Message'] : " ",
+                    isset($data['Code']) ? $data['Code'] : " ",
+                )));
+            }
+        }
+    }
 
-	/**
-	 * @return GatewayFactory
-	 */
-	public function getGatewayFactory() {
+    /**
+     * @return GatewayFactory
+     */
+    public function getGatewayFactory()
+    {
         if (!isset($this->gatewayFactory)) {
             $this->gatewayFactory = \Injector::inst()->get('Omnipay\Common\GatewayFactory');
         }
 
-		return $this->gatewayFactory;
-	}
+        return $this->gatewayFactory;
+    }
 
-	/**
-	 * @param GatewayFactory $gatewayFactory
-	 *
-	 * @return $this
-	 */
-	public function setGatewayFactory($gatewayFactory) {
-		$this->gatewayFactory = $gatewayFactory;
-		return $this;
-	}
+    /**
+     * @param GatewayFactory $gatewayFactory
+     *
+     * @return $this
+     */
+    public function setGatewayFactory($gatewayFactory)
+    {
+        $this->gatewayFactory = $gatewayFactory;
+        return $this;
+    }
 
     /**
      * @return \Omnipay\Common\CreditCard
      */
-    protected function getCreditCard($data) {
+    protected function getCreditCard($data)
+    {
         return new CreditCard($data);
     }
 
-	//testing functions (could these instead be injected somehow?)
+    //testing functions (could these instead be injected somehow?)
 
     /**
      * Set the guzzle client (for testing)
@@ -365,12 +373,12 @@ abstract class PaymentService extends \Object
      */
     public static function setHttpClient(ClientInterface $httpClient)
     {
-        self::$httpclient = $httpClient;
+        self::$httpClient = $httpClient;
     }
 
     public static function getHttpClient()
     {
-        return self::$httpclient;
+        return self::$httpClient;
     }
 
     /**
@@ -379,12 +387,12 @@ abstract class PaymentService extends \Object
      */
     public static function setHttpRequest(Request $httpRequest)
     {
-        self::$httprequest = $httpRequest;
+        self::$httpRequest = $httpRequest;
     }
 
     public static function getHttpRequest()
     {
-        return self::$httprequest;
+        return self::$httpRequest;
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -392,40 +400,44 @@ abstract class PaymentService extends \Object
     // TODO: Remove with 3.0
     // -----------------------------------------------------------------------------------------------------------------
 
-	/**
-	 * Set the guzzle client (for testing)
-	 * @param \Guzzle\Http\ClientInterface $httpClient guzzle client for testing
+    /**
+     * Set the guzzle client (for testing)
+     * @param \Guzzle\Http\ClientInterface $httpClient guzzle client for testing
      * @deprecated 3.0 Snake-case methods will be deprecated with 3.0, use setHttpClient
-	 */
-	public static function set_http_client(ClientInterface $httpClient) {
+     */
+    public static function set_http_client(ClientInterface $httpClient)
+    {
         \Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0, use setHttpClient');
-		self::setHttpClient($httpClient);
-	}
+        self::setHttpClient($httpClient);
+    }
 
     /**
      * @deprecated 3.0 Snake-case methods will be deprecated with 3.0, use getHttpClient
      */
-	public static function get_http_client() {
+    public static function get_http_client()
+    {
         \Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0, use getHttpClient');
-		return self::getHttpClient();
-	}
+        return self::getHttpClient();
+    }
 
-	/**
-	 * Set the symphony http request (for testing)
-	 * @param \Symfony\Component\HttpFoundation\Request $httpRequest symphony http request for testing
+    /**
+     * Set the symphony http request (for testing)
+     * @param \Symfony\Component\HttpFoundation\Request $httpRequest symphony http request for testing
      * @deprecated 3.0 Snake-case methods will be deprecated with 3.0, use setHttpRequest
-	 */
-	public static function set_http_request(Request $httpRequest) {
+     */
+    public static function set_http_request(Request $httpRequest)
+    {
         \Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0, use setHttpRequest');
         self::setHttpRequest($httpRequest);
-	}
+    }
 
     /**
      * @deprecated 3.0 Snake-case methods will be deprecated with 3.0, use getHttpRequest
      */
-	public static function get_http_request() {
+    public static function get_http_request()
+    {
         \Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0, use getHttpRequest');
-		return self::getHttpRequest();
-	}
+        return self::getHttpRequest();
+    }
 
 }
