@@ -19,6 +19,7 @@ use Omnipay\Common\GatewayFactory;
  *
  * The following config settings are allowed per gateway:
  * * `is_manual` *boolean*: Set this to true if this gateway should be considered a "Manual" Payment (eg. Invoice)
+ * * `is_offsite` *boolean*: Set this to true if this gateway is an offsite gateway (you can force this setting if the automatic detection fails)
  * * `use_authorize` *boolean*: Whether or not this Gateway should prefer authorize over purchase
  * * `use_async_notification` *boolean*: When set to true, this Gateway will receive asynchronous notifications from the Payment provider
  * * `token_key` *string*: Key for the token parameter
@@ -96,6 +97,10 @@ class GatewayInfo
      */
     public static function isOffsite($gateway)
     {
+        if (self::getConfigSetting($gateway, 'is_offsite')) {
+            return true;
+        }
+        
         $factory = new GatewayFactory();
         $gateway = $factory->create($gateway);
         // Some offsite gateways don't separate between authorize and complete requests,
