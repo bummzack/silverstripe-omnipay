@@ -58,7 +58,7 @@ abstract class PaymentTest extends FunctionalTest
     public function setUp()
     {
         parent::setUp();
-        
+
         Payment::config()->allowed_gateways = array(
             'PayPal_Express',
             'PaymentExpress_PxPay',
@@ -106,15 +106,15 @@ abstract class PaymentTest extends FunctionalTest
     protected function setMockHttpResponse($paths)
     {
         $testspath = BASE_PATH . '/vendor/omnipay'; //TODO: improve?
-        
+
         $mock = new Guzzle\Plugin\Mock\MockPlugin(null, true);
-        
-        $this->getHttpClient()->getEventDispatcher()->addSubscriber($mock);
+
+        $this->getHttpClient()->getEventDispatcher()->removeSubscriber($mock);
         foreach ((array)$paths as $path) {
             $mock->addResponse($testspath . '/' . $path);
         }
-        
-        $this->getHttpClient()->getEventDispatcher()->removeSubscriber($mock);
+
+        $this->getHttpClient()->getEventDispatcher()->addSubscriber($mock);
 
         return $mock;
     }

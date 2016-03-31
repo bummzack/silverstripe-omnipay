@@ -15,8 +15,8 @@ class PurchaseService extends PaymentService
     public function getReturnUrl()
     {
         $value = parent::getReturnUrl();
-        $msg = $this->payment->getLatestMessageOfType('PurchaseRequest');
         if (!$value) {
+            $msg = $this->payment->getLatestMessageOfType('PurchaseRequest');
             $value = $msg ? $msg->SuccessURL : \Director::baseURL();
         }
         return $value;
@@ -29,8 +29,8 @@ class PurchaseService extends PaymentService
     public function getCancelUrl()
     {
         $value = parent::getCancelUrl();
-        $msg = $this->payment->getLatestMessageOfType('PurchaseRequest');
         if (!$value) {
+            $msg = $this->payment->getLatestMessageOfType('PurchaseRequest');
             $value = $msg ? $msg->FailureURL : \Director::baseURL();
         }
         return $value;
