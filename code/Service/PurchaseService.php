@@ -3,13 +3,8 @@
 namespace SilverStripe\Omnipay\Service;
 
 
-use Omnipay\Common\Message\AbstractResponse;
-use Omnipay\Common\Message\RedirectResponseInterface;
 use SilverStripe\Omnipay\Exception\InvalidStateException;
 use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
-use SilverStripe\Omnipay\GatewayResponse;
-use SilverStripe\Omnipay\Service\Response\RedirectResponse;
-use SilverStripe\Omnipay\Service\Response\SuccessResponse;
 
 class PurchaseService extends PaymentService
 {
@@ -40,9 +35,6 @@ class PurchaseService extends PaymentService
             );
         }
 
-		//update success/fail urls
-		//$this->update($data);
-
         $gatewayData = $this->gatherGatewayData($data);
 
         $this->extend('onBeforePurchase', $gatewayData);
@@ -58,31 +50,32 @@ class PurchaseService extends PaymentService
             $response = $this->response = $request->send();
         } catch (\Omnipay\Common\Exception\OmnipayException $e) {
             $this->createMessage('PurchaseError', $e);
-            return $this->getErrorResponse($this->response, $e->getMessage());
+            // create an error response by wrapping a non-existant Omnipay response
+            return $this->generateServiceResponse(ServiceResponse::SERVICE_ERROR);
         }
 
         $this->extend('onAfterSendPurchase', $request, $response);
 
-        // check for a redirect.
-        if ($response instanceof RedirectResponseInterface && $response->isRedirect()) {
-            $this->createMessage('PurchaseRedirectResponse', $response);
+        $serviceResponse = $this->wrapOmnipayResponse($response);
+
+        if ($serviceResponse->isRedirect() || $serviceResponse->isAwaitingNotification()) {
             $this->payment->Status = 'PendingCapture';
             $this->payment->write();
 
-            // redirect to off-site payment gateway
-            $redirectResponse = new RedirectResponse($this->payment, $response);
-            $redirectResponse->setMessage("Redirecting to gateway");
-            return $redirectResponse;
+            $this->createMessage(
+                $serviceResponse->isRedirect() ? 'PurchaseRedirectResponse' : 'PurchaseResponse',
+                $response
+            );
+        } else if($serviceResponse->isError()){
+            $this->createMessage('PurchaseError', $response);
+        } else {
+            $this->createMessage('PurchasedResponse', $response);
+            $this->payment->Status = 'Captured';
+            $this->payment->write();
+            $this->payment->extend('onCaptured', $serviceResponse);
         }
 
-        // check for success. We can complete the payment if the gateway returned success
-        if ($response->isSuccessful()) {
-            return $this->completePayment($response);
-        }
-
-        // Leaves us with the error case
-        $this->createMessage('PurchaseError', $response);
-        return $this->getErrorResponse($response, "Error (".$response->getCode()."): ".$response->getMessage());
+        return $serviceResponse;
 	}
 
 	/**
@@ -92,12 +85,14 @@ class PurchaseService extends PaymentService
 	 */
     public function complete($data = array(), $isNotification = false)
     {
+        $flags = $isNotification ? ServiceResponse::SERVICE_NOTIFICATION : 0;
         // The payment is already captured
         if($this->payment->Status === 'Captured'){
-            if($isNotification){
+            return $this->generateServiceResponse($flags);
+        }
 
-            }
-            return null;
+        if(!$this->payment->Status === 'PendingCapture'){
+            throw new InvalidStateException('Cannot capture a purchase with this payment. Status is not "PendingCapture"');
         }
 
         $gateway = $this->oGateway();
@@ -107,7 +102,6 @@ class PurchaseService extends PaymentService
             );
         }
 
-        $gatewayResponse = $this->createGatewayResponse();
         // purchase and completePurchase should use the same data
 		$gatewayData = $this->gatherGatewayData($data);
 
@@ -119,33 +113,23 @@ class PurchaseService extends PaymentService
 		$response = null;
 		try {
 			$response = $this->response = $request->send();
-            $this->extend('onAfterSendCompletePurchase', $request, $response);
-            $gatewayResponse->setOmnipayResponse($response);
-			if ($response->isSuccessful()) {
-				$this->completePayment($gatewayResponse);
-			} else {
-				$this->createMessage('CompletePurchaseError', $response);
-			}
 		} catch (\Omnipay\Common\Exception\OmnipayException $e) {
 			$this->createMessage("CompletePurchaseError", $e);
+            return $this->generateServiceResponse($flags | ServiceResponse::SERVICE_ERROR);
 		}
 
-		return $gatewayResponse;
+        $serviceResponse = $this->wrapOmnipayResponse($response, $isNotification);
+        if($serviceResponse->isError()){
+            $this->createMessage('CompletePurchaseError', $response);
+        } else {
+            $this->createMessage('PurchasedResponse', $response);
+            $this->payment->Status = 'Captured';
+            $this->payment->write();
+            $this->payment->extend('onCaptured', $serviceResponse);
+        }
+
+		return $serviceResponse;
 	}
-
-    protected function completePayment(AbstractResponse $gwResponse)
-    {
-        $this->createMessage('PurchasedResponse', $gwResponse);
-        $this->payment->Status = 'Captured';
-        $this->payment->write();
-
-        $response = new SuccessResponse($this->payment, $gwResponse);
-        $response->setMessage('Payment successful');
-
-        $this->payment->extend('onCaptured', $response);
-
-        return $response;
-    }
 
     /**
      * Attempt to make a payment.

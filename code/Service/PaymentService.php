@@ -5,8 +5,6 @@ namespace SilverStripe\Omnipay\Service;
 
 use SilverStripe\Omnipay\GatewayInfo;
 use SilverStripe\Omnipay\PaymentGatewayController;
-use SilverStripe\Omnipay\Service\Response\ErrorResponse;
-use SilverStripe\Omnipay\Service\Response\ServiceResponse;
 use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
 use SilverStripe\Omnipay\Exception\InvalidStateException;
 use Guzzle\Http\ClientInterface;
@@ -16,6 +14,7 @@ use Omnipay\Common\CreditCard;
 use Omnipay\Common\Message\AbstractResponse;
 use Omnipay\Common\Message\AbstractRequest;
 use Omnipay\Common\Exception\OmnipayException;
+use Symfony\Component\EventDispatcher\Tests\Service;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -242,15 +241,76 @@ abstract class PaymentService extends \Object
     }
 
     /**
-     * Get a service error response.
+     * Get a service response from the given Omnipay response
      * @param AbstractResponse $omnipayResponse
-     * @param string $message
-     * @return ErrorResponse
+     * @param bool $isNotification whether or not this response is a response to a notification
+     * @return ServiceResponse
      */
-    protected function getErrorResponse(AbstractResponse $omnipayResponse, $message)
+    protected function wrapOmnipayResponse(AbstractResponse $omnipayResponse, $isNotification = false)
     {
-        $response = new ErrorResponse($this->payment, $omnipayResponse);
-        $response->setMessage($message);
+        $httpResponse = null;
+
+        if($isNotification){
+            $flags = ServiceResponse::SERVICE_NOTIFICATION;
+            if (!$omnipayResponse->isSuccessful()) {
+                $flags |= ServiceResponse::SERVICE_ERROR;
+            }
+            return $this->generateServiceResponse($flags, $httpResponse, $omnipayResponse);
+        }
+
+        $isAsync = GatewayInfo::shouldUseAsyncNotifications($this->payment->Gateway);
+        $flags = $isAsync ? ServiceResponse::SERVICE_PENDING : 0;
+
+        if($omnipayResponse->isRedirect()){
+            $redirectResponse = $omnipayResponse->getRedirectResponse();
+            if ($redirectResponse instanceof \Symfony\Component\HttpFoundation\RedirectResponse) {
+                $httpResponse = \Controller::curr()->redirect($redirectResponse->getTargetUrl());
+            } else {
+                $httpResponse = new \SS_HTTPResponse((string)$redirectResponse->getContent(), 200);
+            }
+            $flags |= ServiceResponse::SERVICE_REDIRECT;
+        } else if(!$omnipayResponse->isSuccessful() && !$isAsync){
+            $flags |= ServiceResponse::SERVICE_ERROR;
+        }
+
+        return $this->generateServiceResponse($flags, $httpResponse, $omnipayResponse);
+    }
+
+    /**
+     * Generate a service response
+     * @param int $flags a combination of service flags
+     * @param \SS_HTTPResponse|null $httpResponse explicitly set the HTTP response. If not set, this will default to
+     *  an "OK" response for notifications or a redirect to the return or cancel url.
+     * @param AbstractResponse|null $omnipayResponse the response from the Omnipay gateway
+     * @return ServiceResponse
+     */
+    protected function generateServiceResponse(
+        $flags,
+        \SS_HTTPResponse $httpResponse = null,
+        AbstractResponse $omnipayResponse = null
+    ) {
+        $response = new ServiceResponse($this->payment, $flags);
+        $response->setOmnipayResponse($omnipayResponse);
+
+        if($httpResponse === null){
+            if($response->isNotification()){
+                $httpResponse = $response->isError()
+                    ? new \SS_HTTPResponse("NOK", 500)
+                    : new \SS_HTTPResponse("OK", 200);
+            } else {
+                $httpResponse = \Controller::curr()->redirect(
+                    $response->isError()
+                        ? $this->getCancelUrl()
+                        : $this->getReturnUrl()
+                );
+            }
+        }
+
+        $response->setHttpResponse($httpResponse);
+
+        // Hook to update service response via extensions. This can be used to customize the service response
+        $this->extend('updateServiceResponse', $response);
+
         return $response;
     }
 

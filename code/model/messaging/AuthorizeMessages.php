@@ -20,13 +20,3 @@ class CompleteAuthorizeRequest extends GatewayRequestMessage{
 class CompleteAuthorizeError extends GatewayErrorMessage{
 
 }
-
-class CaptureRequest extends GatewayRequestMessage{
-
-}
-class CapturedResponse extends GatewayResponseMessage{
-
-}
-class CaptureError extends GatewayErrorMessage{
-	
-}
