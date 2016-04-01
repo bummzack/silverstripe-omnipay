@@ -192,17 +192,12 @@ final class Payment extends DataObject{
      */
     public function getLatestMessageOfType($type)
     {
-        $msg = null;
-        try {
-            // This might throw unsaved-relation exception if Payment hasn't been saved before
-            $msg = $this->Messages()
-                ->filter("ClassName", $type)
-                ->first();
-        } catch (Exception $ex){
-            // do nothing
+        if(!$this->isInDB()){
+            return null;
         }
-
-        return $msg;
+        return $this->Messages()
+            ->filter("ClassName", $type)
+            ->first();
     }
 
 	/**

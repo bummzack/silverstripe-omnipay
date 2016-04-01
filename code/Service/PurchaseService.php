@@ -145,7 +145,7 @@ class PurchaseService extends PaymentService
             $response = $this->response = $request->send();
         } catch (\Omnipay\Common\Exception\OmnipayException $e) {
             $this->createMessage($ucMethod . 'Error', $e);
-            // create an error response by wrapping a non-existant Omnipay response
+            // create an error response
             return $this->generateServiceResponse(ServiceResponse::SERVICE_ERROR);
         }
 
@@ -195,7 +195,7 @@ class PurchaseService extends PaymentService
             return $this->generateServiceResponse($flags);
         }
 
-        if(!$this->payment->Status === $this->pendingStatus){
+        if($this->payment->Status !== $this->pendingStatus){
             throw new InvalidStateException('Cannot complete this payment. Status is not "'.$this->pendingStatus.'"');
         }
 

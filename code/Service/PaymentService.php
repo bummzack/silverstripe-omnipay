@@ -3,6 +3,7 @@
 namespace SilverStripe\Omnipay\Service;
 
 
+use Omnipay\Common\Message\NotificationInterface;
 use SilverStripe\Omnipay\GatewayInfo;
 use SilverStripe\Omnipay\PaymentGatewayController;
 use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
@@ -121,7 +122,7 @@ abstract class PaymentService extends \Object
 
         return $this;
     }
-    
+
     /**
      * Initiate a gateway request with some user/application supplied data.
      * @param array $data payment data
@@ -232,6 +233,61 @@ abstract class PaymentService extends \Object
     }
 
     /**
+     * Handle a notification via gateway->acceptNotification
+     * @return ServiceResponse
+     * @throws InvalidConfigurationException
+     */
+    protected function handleNotification()
+    {
+        $gateway = $this->oGateway();
+        if (!$gateway->supportsAcceptNotification()) {
+            throw new InvalidConfigurationException(
+                sprintf('The gateway "%s" doesn\'t support "acceptNotification"', $this->payment->Gateway)
+            );
+        }
+
+        // Deal with the notification, according to the omnipay documentation
+        // https://github.com/thephpleague/omnipay#incoming-notifications
+        $notification = null;
+        try {
+            $notification = $gateway->acceptNotification();
+        } catch (\Omnipay\Common\Exception\OmnipayException $e) {
+            $this->createMessage('NotificationError', $e);
+            return $this->generateServiceResponse(
+                ServiceResponse::SERVICE_NOTIFICATION | ServiceResponse::SERVICE_ERROR
+            );
+        }
+
+        if (!($notification instanceof NotificationInterface)) {
+            $this->createMessage(
+                'NotificationError',
+                'Notification from Omnipay doesn\'t implement NotificationInterface'
+            );
+            return $this->generateServiceResponse(
+                ServiceResponse::SERVICE_NOTIFICATION | ServiceResponse::SERVICE_ERROR
+            );
+        }
+
+        switch ($notification->getTransactionStatus()) {
+            case NotificationInterface::STATUS_COMPLETED:
+                $this->createMessage('NotificationSuccessful', $notification);
+                return $this->generateServiceResponse(ServiceResponse::SERVICE_NOTIFICATION);
+                break;
+            case NotificationInterface::STATUS_PENDING:
+                $this->createMessage('NotificationPending', $notification);
+                return $this->generateServiceResponse(
+                    ServiceResponse::SERVICE_NOTIFICATION | ServiceResponse::SERVICE_PENDING
+                );
+        }
+
+        // The only status left is error
+        $this->createMessage('NotificationError', $notification);
+        return $this->generateServiceResponse(
+            ServiceResponse::SERVICE_NOTIFICATION | ServiceResponse::SERVICE_ERROR
+        );
+    }
+
+    /**
      * Generate a return/notify url for off-site gateways (completePayment).
      * @param string $action the action to call on the endpoint (complete, notify or cancel)
      * @return string endpoint url
@@ -307,7 +363,7 @@ abstract class PaymentService extends \Object
      * Record a transaction on this for this payment.
      * @param string $type the type of transaction to create.
      *        This is any class that is (or extends) PaymentMessage.
-     * @param array|string|AbstractResponse|AbstractRequest|OmnipayException $data the response to record, or data to store
+     * @param array|string|AbstractResponse|AbstractRequest|OmnipayException|NotificationInterface $data the response to record, or data to store
      * @return \PaymentMessage newly created DataObject, saved to database.
      */
     protected function createMessage($type, $data = null)
@@ -347,6 +403,13 @@ abstract class PaymentService extends \Object
                 'CancelUrl' => $data->getCancelUrl(),
                 'NotifyUrl' => $data->getNotifyUrl(),
                 'Parameters' => $data->getParameters()
+            );
+        } elseif ($data instanceof NotificationInterface) {
+            $output = array(
+                "Message" => $data->getMessage(),
+                "Code" => $data->getTransactionStatus(),
+                "Reference" => $data->getTransactionReference(),
+                "Data" => $data->getData()
             );
         }
         $output = array_merge($output, array(
