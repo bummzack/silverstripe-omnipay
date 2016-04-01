@@ -73,8 +73,8 @@ class PaymentGatewayController extends \Controller
                 $this->httpError(404, _t('Payment.InvalidStatus', 'Invalid/unhandled payment status'));
                 return $response;
         }
-
-		$service = ServiceFactory::inst()->getService($payment, $intent);
+        
+		$service = ServiceFactory::create()->getService($payment, $intent);
 
 		//do the payment update
 		switch ($this->request->param('Status')) {

@@ -22,13 +22,13 @@ class ServiceFactoryTest extends PaymentTest
         //$this->setExpectException(InvalidConfigurationException::class);
         $this->assertInstanceOf(
             '\SilverStripe\Omnipay\Service\AuthorizeService',
-            ServiceFactory::inst()->getService($payment, ServiceFactory::INTENT_AUTHORIZE),
+            $this->factory->getService($payment, ServiceFactory::INTENT_AUTHORIZE),
             'Intent "authorize" should return an instance of "AuthorizeService".'
         );
 
         $this->assertInstanceOf(
             '\SilverStripe\Omnipay\Service\PurchaseService',
-            ServiceFactory::inst()->getService($payment, ServiceFactory::INTENT_PAYMENT),
+            $this->factory->getService($payment, ServiceFactory::INTENT_PAYMENT),
             'Intent "payment" must return a PurchaseService when gateway doesn\'t use authorize.'
         );
 
@@ -38,12 +38,12 @@ class ServiceFactoryTest extends PaymentTest
 
         $this->assertInstanceOf(
             '\SilverStripe\Omnipay\Service\AuthorizeService',
-            ServiceFactory::inst()->getService($payment, ServiceFactory::INTENT_PAYMENT),
+            $this->factory->getService($payment, ServiceFactory::INTENT_PAYMENT),
             'Intent "payment" must return a AuthorizeService when gateway is configured to use authorize.'
         );
 
         // This will throw an exception, because there's no service for the intent "undefined"
-        ServiceFactory::inst()->getService($this->payment, 'undefined');
+        $this->factory->getService($this->payment, 'undefined');
     }
 
     public function testCustomService()
@@ -54,7 +54,7 @@ class ServiceFactoryTest extends PaymentTest
 
         $this->assertInstanceOf(
             'ServiceFactoryTest_TestService',
-            ServiceFactory::inst()->getService($this->payment, ServiceFactory::INTENT_PURCHASE),
+            $this->factory->getService($this->payment, ServiceFactory::INTENT_PURCHASE),
             'The factory should return the configured service instead of the default one.'
         );
 

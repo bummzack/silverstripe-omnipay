@@ -1,5 +1,7 @@
 <?php
 use SilverStripe\Omnipay\Service\PaymentService;
+use SilverStripe\Omnipay\Service\ServiceFactory;
+
 
 abstract class PaymentTest extends FunctionalTest
 {
@@ -12,6 +14,9 @@ abstract class PaymentTest extends FunctionalTest
 
     /** @var Payment */
     protected $payment;
+
+    /** @var \SilverStripe\Omnipay\Service\ServiceFactory */
+    protected $factory;
 
     protected $httpClient, $httpRequest;
 
@@ -58,6 +63,8 @@ abstract class PaymentTest extends FunctionalTest
     public function setUp()
     {
         parent::setUp();
+
+        $this->factory = ServiceFactory::create();
 
         Payment::config()->allowed_gateways = array(
             'PayPal_Express',

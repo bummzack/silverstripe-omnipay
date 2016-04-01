@@ -19,33 +19,6 @@ class ServiceFactory extends \Object
     const INTENT_PAYMENT    = "payment";
 
     /**
-     * @var ServiceFactory
-     */
-    private static $instance = null;
-
-    /**
-     * Access the service factory instance
-     * @return ServiceFactory
-     */
-    public static function inst()
-    {
-        if (self::$instance === null) {
-            self::$instance = ServiceFactory::create();
-        }
-
-        return self::$instance;
-    }
-
-    /**
-     * Override the service factory instance
-     * @param ServiceFactory $value
-     */
-    public static function setInstance(ServiceFactory $value)
-    {
-        self::$instance = $value;
-    }
-
-    /**
      * Create a service for the given payment and intent.
      *
      * This method will look for a method named `create{Intent}Service`, where
