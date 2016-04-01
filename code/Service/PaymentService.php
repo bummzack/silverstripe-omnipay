@@ -275,18 +275,7 @@ abstract class PaymentService extends \Object
         $isAsync = GatewayInfo::shouldUseAsyncNotifications($this->payment->Gateway);
         $flags = $isAsync ? ServiceResponse::SERVICE_PENDING : 0;
 
-        if($omnipayResponse->isRedirect()){
-            $serviceResponse = $this->generateServiceResponse(($flags | ServiceResponse::SERVICE_REDIRECT), $omnipayResponse);
-            $redirectResponse = $omnipayResponse->getRedirectResponse();
-            if ($redirectResponse instanceof \Symfony\Component\HttpFoundation\RedirectResponse) {
-                $serviceResponse->setTargetUrl($redirectResponse->getTargetUrl());
-            } else {
-                $serviceResponse->setHttpResponse(
-                    new \SS_HTTPResponse((string)$redirectResponse->getContent(), 200)
-                );
-            }
-            return $serviceResponse;
-        } else if(!$omnipayResponse->isSuccessful() && !$isAsync){
+        if(!$omnipayResponse->isSuccessful() && !$omnipayResponse->isRedirect() && !$isAsync){
             $flags |= ServiceResponse::SERVICE_ERROR;
         }
 
@@ -309,12 +298,13 @@ abstract class PaymentService extends \Object
         }
 
         if($response->isNotification()){
+            // set explicit HTTP responses for notifications
             $httpResponse = $response->isError()
                 ? new \SS_HTTPResponse("NOK", 500)
                 : new \SS_HTTPResponse("OK", 200);
 
             $response->setHttpResponse($httpResponse);
-        } else {
+        } else if(!$response->isRedirect()){ // redirects don't need a target URL.
             $response->setTargetUrl(
                 ($response->isError() || $response->isCancelled())
                     ? $this->getCancelUrl()

@@ -3,6 +3,7 @@
 namespace SilverStripe\Omnipay\Service;
 
 use Omnipay\Common\Message\AbstractResponse;
+use SilverStripe\Omnipay\Exception\ServiceException;
 
 /**
  * Class ServiceResponse.
@@ -31,19 +32,14 @@ class ServiceResponse
     const SERVICE_PENDING = 2;
 
     /**
-     * Flag to mark this response as a redirect to an offsite gateway
-     */
-    const SERVICE_REDIRECT = 4;
-
-    /**
      * Flag to mark this response as a notification response (eg. HTTP response will be returned to the payment gateway)
      */
-    const SERVICE_NOTIFICATION = 8;
+    const SERVICE_NOTIFICATION = 4;
 
     /**
      * Flag to mark this response as a cancelled payment
      */
-    const SERVICE_CANCELLED = 16;
+    const SERVICE_CANCELLED = 8;
 
     /**
      * @var \Omnipay\Common\Message\ResponseInterface
@@ -98,6 +94,16 @@ class ServiceResponse
     }
 
     /**
+     * Whether or not this is an *offsite* redirect.
+     * This is only the case when there's an Omnipay response present that *is* a redirect.
+     * @return bool
+     */
+    public function isRedirect()
+    {
+        return $this->omnipayResponse && $this->omnipayResponse->isRedirect();
+    }
+
+    /**
      * Whether or not this response is an error-response.
      * Attention: This doesn't necessarily correlate with the Omnipay response being successful or not…
      * A redirect is not successful in terms of completing a payment (response from omnipay isn't successful), yet the
@@ -129,15 +135,6 @@ class ServiceResponse
     }
 
     /**
-     * Whether or not this is an offsite redirect
-     * @return bool
-     */
-    public function isRedirect()
-    {
-        return $this->hasFlag(self::SERVICE_REDIRECT);
-    }
-
-    /**
      * Whether or not the payment was cancelled
      * @return bool
      */
@@ -161,7 +158,7 @@ class ServiceResponse
 
     /**
      * Add a flag for this response.
-     * Example: `$r->addFlag(ServiceResponse::SERVICE_REDIRECT)`
+     * Example: `$r->addFlag(ServiceResponse::SERVICE_PENDING)`
      *
      * @param int $flag
      * @throws \InvalidArgumentException if the parameter is not of type int
@@ -178,7 +175,7 @@ class ServiceResponse
 
     /**
      * Remove a flag from this response.
-     * Example: `$r->removeFlag(ServiceResponse::SERVICE_REDIRECT)`
+     * Example: `$r->removeFlag(ServiceResponse::SERVICE_PENDING)`
      *
      * @param int $flag
      * @throws \InvalidArgumentException if the parameter is not of type int
@@ -204,12 +201,18 @@ class ServiceResponse
     }
 
     /**
-     * Set the target url
+     * Set the target url.
+     * In the case of a redirect, the URL is given by the Omnipay response and should be considered immutable.
+     * When trying to set a targetUrl in this scenario, an Exception will be raised.
      * @param string $value the new target url
      * @return $this
+     * @throws ServiceException if trying to set a targetUrl for a redirect.
      */
     public function setTargetUrl($value)
     {
+        if($this->isRedirect()){
+            throw new ServiceException('Unable to override target URL of redirect response');
+        }
         $this->targetUrl = $value;
         return $this;
     }
@@ -231,15 +234,40 @@ class ServiceResponse
     public function setOmnipayResponse(AbstractResponse $response)
     {
         $this->omnipayResponse = $response;
+        // also set the target Url if the response is a redirect
+        if($this->isRedirect()){
+            $redirectResponse = $this->omnipayResponse->getRedirectResponse();
+            if ($redirectResponse instanceof \Symfony\Component\HttpFoundation\RedirectResponse) {
+                $this->targetUrl = $redirectResponse->getTargetUrl();
+            }
+        }
         return $this;
     }
 
     /**
-     * Create a redirect or a response. This should be called when the application is ready to redirect!
+     * Create a redirect or a response.
+     * This should be called when the application is ready to redirect!
+     *
+     * If the response is a redirect, the redirect takes precedence.
+     * Next, the HTTP response will be returned (if set) and lastly
+     * a redirect response to the  @see getTargetUrl.
+     *
+     * If none of these parameters are given, this method will return null
+     *
      * @return null|\SS_HTTPResponse
      */
     public function redirectOrRespond()
     {
+        if($this->isRedirect()){
+            $redirectResponse = $this->omnipayResponse->getRedirectResponse();
+            if ($redirectResponse instanceof \Symfony\Component\HttpFoundation\RedirectResponse) {
+                $this->targetUrl = $redirectResponse->getTargetUrl();
+                return \Controller::curr()->redirect($this->targetUrl);
+            } else {
+                return new \SS_HTTPResponse((string)$redirectResponse->getContent(), 200);
+            }
+        }
+
         if($this->httpResponse){
             return $this->httpResponse;
         }
