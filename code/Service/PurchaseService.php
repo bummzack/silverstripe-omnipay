@@ -35,7 +35,7 @@ class PurchaseService extends PaymentService
         }
         return $value;
     }
-    
+
     /**
 	 * Attempt to make a payment.
 	 *
@@ -149,7 +149,7 @@ class PurchaseService extends PaymentService
         $serviceResponse = $this->wrapOmnipayResponse($response, $isNotification);
         if($serviceResponse->isError()){
             $this->createMessage('CompletePurchaseError', $response);
-        } else {
+        } else if(!$serviceResponse->isAwaitingNotification()){
             $this->createMessage('PurchasedResponse', $response);
             $this->payment->Status = 'Captured';
             $this->payment->write();
