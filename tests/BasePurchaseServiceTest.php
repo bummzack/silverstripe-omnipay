@@ -199,7 +199,9 @@ abstract class BasePurchaseServiceTest extends PaymentTest
         $this->assertTrue($response->isError());
         $this->assertSame("Created", $payment->Status);
 
-        //check messaging
+        //check messaging.
+        // We use the onsite fail messages here, since the payment fails *before* we redirect to the offsite gateway.
+        // Therefore this should generate the same messages as an onsite-payment failure.
         $this->assertDOSContains($this->onsiteFailMessages, $payment->Messages());
     }
 
@@ -237,7 +239,7 @@ abstract class BasePurchaseServiceTest extends PaymentTest
         )->setReturnUrl("complete");
 
         // Will throw an exception since the gateway doesn't exist
-        $result = $service->initiate();
+        $service->initiate();
     }
 
 
@@ -265,7 +267,6 @@ abstract class BasePurchaseServiceTest extends PaymentTest
 
         $payment = $this->payment->setGateway('PaymentExpress_PxPost');
 
-        /** @var PaymentService $service */
         $service = $this->getService($payment);
         $service->setGatewayFactory($this->stubGatewayFactory($stubGateway));
 
@@ -296,7 +297,6 @@ abstract class BasePurchaseServiceTest extends PaymentTest
 
         $payment = $this->payment->setGateway('PaymentExpress_PxPost');
 
-        /** @var PaymentService $service */
         $service = $this->getService($payment);
         $service->setGatewayFactory($this->stubGatewayFactory($stubGateway));
 
@@ -316,7 +316,6 @@ abstract class BasePurchaseServiceTest extends PaymentTest
         });
         $payment = $this->payment->setGateway('PaymentExpress_PxPay');
 
-        /** @var PaymentService $service */
         $service = $this->getService($payment);
         $service->setGatewayFactory($this->stubGatewayFactory($stubGateway));
 
@@ -375,7 +374,6 @@ abstract class BasePurchaseServiceTest extends PaymentTest
         });
         $payment = $this->payment->setGateway('PaymentExpress_PxPay');
 
-        /** @var PaymentService $service */
         $service = $this->getService($payment);
         $service->setGatewayFactory($this->stubGatewayFactory($stubGateway));
 
