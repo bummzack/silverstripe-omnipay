@@ -144,16 +144,16 @@ class ServiceResponse
     }
 
     /**
-     * Check if the given flag is set (active)
-     * @param int $flag the flag to check
-     * @return bool
+     * Check if the given flag(s) is set (active)
+     * @param int $flag the flag to check. Can be a combination of several flags (joined with binary OR)
+     * @return bool true if the given flag/s match
      */
     public function hasFlag($flag)
     {
         if (!is_int($flag)) {
             throw new \InvalidArgumentException('Flag must be of type int');
         }
-        return ($this->flags & $flag) > 0;
+        return ($this->flags & $flag) === $flag;
     }
 
     /**

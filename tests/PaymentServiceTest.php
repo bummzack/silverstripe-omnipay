@@ -4,6 +4,7 @@ use SilverStripe\Omnipay\Service\ServiceFactory;
 
 class PaymentServiceTest extends PaymentTest
 {
+    //TODO: Test modifications done to ServiceResponse via Extensions
 
     /** @var \SilverStripe\Omnipay\Service\PurchaseService */
     protected $service;
