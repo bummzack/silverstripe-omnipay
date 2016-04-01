@@ -121,22 +121,7 @@ abstract class PaymentService extends \Object
 
         return $this;
     }
-
-    /**
-     * Update class properties via array.
-     */
-    /*
-    public function update($data)
-    {
-        if (isset($data['returnUrl'])) {
-            $this->setReturnUrl($data['returnUrl']);
-        }
-        if (isset($data['cancelUrl'])) {
-            $this->setCancelUrl($data['cancelUrl']);
-        }
-    }
-    */
-
+    
     /**
      * Initiate a gateway request with some user/application supplied data.
      * @param array $data payment data
