@@ -303,7 +303,7 @@ class PurchaseServiceTest extends PaymentTest
 
         // build a stub gateway with the given endpoint
         $isNotification = false;
-        $stubGateway = $this->buildAsyncGatewayStub('https://gateway.tld/endpoint', function () use (&$isNotification){
+        $stubGateway = $this->buildPurchaseGatewayStub('https://gateway.tld/endpoint', function () use (&$isNotification){
             return $isNotification;
         });
         $payment = $this->payment->setGateway('PaymentExpress_PxPay');
@@ -341,8 +341,8 @@ class PurchaseServiceTest extends PaymentTest
 
         $serviceResponse = $service->complete(array(), $isNotification);
 
-        // since the confirmation will come in asynchronously, the gateway doesn't report success when coming back
-        $this->assertTrue($serviceResponse->getOmnipayResponse()->isSuccessful(), 'Gateway should be successful');
+        // the response from the gateway should now be successful
+        $this->assertTrue($serviceResponse->getOmnipayResponse()->isSuccessful(), 'Response should be successful');
         // Should not be an error
         $this->assertFalse($serviceResponse->isError());
         // We should get an HTTP response with "OK"
@@ -362,7 +362,7 @@ class PurchaseServiceTest extends PaymentTest
 
         // build a stub gateway with the given endpoint
         $isNotification = true;
-        $stubGateway = $this->buildAsyncGatewayStub('https://gateway.tld/endpoint', function () use (&$isNotification){
+        $stubGateway = $this->buildPurchaseGatewayStub('https://gateway.tld/endpoint', function () use (&$isNotification){
             return $isNotification;
         });
         $payment = $this->payment->setGateway('PaymentExpress_PxPay');
@@ -385,7 +385,7 @@ class PurchaseServiceTest extends PaymentTest
         $isNotification = true;
         $serviceResponse = $service->complete(array(), $isNotification);
 
-        // since the confirmation will come in asynchronously, the gateway doesn't report success when coming back
+        // since we're getting the async notification now, payment should be successful
         $this->assertTrue($serviceResponse->getOmnipayResponse()->isSuccessful(), 'Response should be successful');
         // Should not be an error
         $this->assertFalse($serviceResponse->isError());
@@ -403,14 +403,14 @@ class PurchaseServiceTest extends PaymentTest
         // We won't get an error, our payment is already complete
         $this->assertFalse($serviceResponse->isError());
         // There's no omnipay response since we no longer need to bother with omnipay at this point
-        $this->assertNull($serviceResponse->getOmnipayResponse(), 'No omnipay response, payment alread completed');
+        $this->assertNull($serviceResponse->getOmnipayResponse(), 'No omnipay response, payment already completed');
         // We should get redirected to the success page now
         $this->assertEquals($serviceResponse->getTargetUrl(), 'my/return/url');
         // Payment status should still be Captured
         $this->assertEquals($payment->Status, 'Captured');
     }
 
-    protected function buildAsyncGatewayStub($endpoint, callable $successFunc)
+    protected function buildPurchaseGatewayStub($endpoint, callable $successFunc)
     {
         //--------------------------------------------------------------------------------------------------------------
         // Purchase request and response
