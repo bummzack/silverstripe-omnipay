@@ -471,17 +471,6 @@ abstract class BasePurchaseServiceTest extends PaymentTest
     }
 
     /**
-     * @param GatewayInterface|PHPUnit_Framework_MockObject_MockObject $stubGateway
-     * @return PHPUnit_Framework_MockObject_MockObject|GatewayFactory
-     */
-    protected function stubGatewayFactory($stubGateway)
-    {
-        $factory = $this->getMockBuilder('Omnipay\Common\GatewayFactory')->getMock();
-        $factory->expects($this->any())->method('create')->will($this->returnValue($stubGateway));
-        return $factory;
-    }
-
-    /**
      * @return PHPUnit_Framework_MockObject_MockObject|Omnipay\Common\Message\AbstractRequest
      */
     protected function stubRequest()
