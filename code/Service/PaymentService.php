@@ -184,6 +184,67 @@ abstract class PaymentService extends \Object
     }
 
     /**
+     * Handle a notification via gateway->acceptNotification.
+     *
+     * This just invokes `acceptNotification` on the gateway (if available) and wraps the return value in
+     * the proper ServiceResponse.
+     *
+     * @return ServiceResponse
+     * @throws InvalidConfigurationException
+     */
+    public function handleNotification()
+    {
+        $gateway = $this->oGateway();
+        if (!$gateway->supportsAcceptNotification()) {
+            throw new InvalidConfigurationException(
+                sprintf('The gateway "%s" doesn\'t support "acceptNotification"', $this->payment->Gateway)
+            );
+        }
+
+        // Deal with the notification, according to the omnipay documentation
+        // https://github.com/thephpleague/omnipay#incoming-notifications
+        $notification = null;
+        try {
+            $notification = $gateway->acceptNotification();
+        } catch (\Omnipay\Common\Exception\OmnipayException $e) {
+            $this->createMessage('NotificationError', $e);
+            return $this->generateServiceResponse(
+                ServiceResponse::SERVICE_NOTIFICATION | ServiceResponse::SERVICE_ERROR
+            );
+        }
+
+        if (!($notification instanceof NotificationInterface)) {
+            $this->createMessage(
+                'NotificationError',
+                'Notification from Omnipay doesn\'t implement NotificationInterface'
+            );
+            return $this->generateServiceResponse(
+                ServiceResponse::SERVICE_NOTIFICATION | ServiceResponse::SERVICE_ERROR
+            );
+        }
+
+        switch ($notification->getTransactionStatus()) {
+            case NotificationInterface::STATUS_COMPLETED:
+                $this->createMessage('NotificationSuccessful', $notification);
+                return $this->generateServiceResponse(ServiceResponse::SERVICE_NOTIFICATION, $notification);
+                break;
+            case NotificationInterface::STATUS_PENDING:
+                $this->createMessage('NotificationPending', $notification);
+                return $this->generateServiceResponse(
+                    ServiceResponse::SERVICE_NOTIFICATION | ServiceResponse::SERVICE_PENDING,
+                    $notification
+                );
+        }
+
+        // The only status left is error
+        $this->createMessage('NotificationError', $notification);
+        return $this->generateServiceResponse(
+            ServiceResponse::SERVICE_NOTIFICATION | ServiceResponse::SERVICE_ERROR,
+            $notification
+        );
+    }
+
+    /**
      * Collect common data parameters to pass to the gateway.
      * This method should merge in common data that is required by all services.
      *
@@ -233,61 +294,6 @@ abstract class PaymentService extends \Object
     }
 
     /**
-     * Handle a notification via gateway->acceptNotification
-     * @return ServiceResponse
-     * @throws InvalidConfigurationException
-     */
-    protected function handleNotification()
-    {
-        $gateway = $this->oGateway();
-        if (!$gateway->supportsAcceptNotification()) {
-            throw new InvalidConfigurationException(
-                sprintf('The gateway "%s" doesn\'t support "acceptNotification"', $this->payment->Gateway)
-            );
-        }
-
-        // Deal with the notification, according to the omnipay documentation
-        // https://github.com/thephpleague/omnipay#incoming-notifications
-        $notification = null;
-        try {
-            $notification = $gateway->acceptNotification();
-        } catch (\Omnipay\Common\Exception\OmnipayException $e) {
-            $this->createMessage('NotificationError', $e);
-            return $this->generateServiceResponse(
-                ServiceResponse::SERVICE_NOTIFICATION | ServiceResponse::SERVICE_ERROR
-            );
-        }
-
-        if (!($notification instanceof NotificationInterface)) {
-            $this->createMessage(
-                'NotificationError',
-                'Notification from Omnipay doesn\'t implement NotificationInterface'
-            );
-            return $this->generateServiceResponse(
-                ServiceResponse::SERVICE_NOTIFICATION | ServiceResponse::SERVICE_ERROR
-            );
-        }
-
-        switch ($notification->getTransactionStatus()) {
-            case NotificationInterface::STATUS_COMPLETED:
-                $this->createMessage('NotificationSuccessful', $notification);
-                return $this->generateServiceResponse(ServiceResponse::SERVICE_NOTIFICATION);
-                break;
-            case NotificationInterface::STATUS_PENDING:
-                $this->createMessage('NotificationPending', $notification);
-                return $this->generateServiceResponse(
-                    ServiceResponse::SERVICE_NOTIFICATION | ServiceResponse::SERVICE_PENDING
-                );
-        }
-
-        // The only status left is error
-        $this->createMessage('NotificationError', $notification);
-        return $this->generateServiceResponse(
-            ServiceResponse::SERVICE_NOTIFICATION | ServiceResponse::SERVICE_ERROR
-        );
-    }
-
-    /**
      * Generate a return/notify url for off-site gateways (completePayment).
      * @param string $action the action to call on the endpoint (complete, notify or cancel)
      * @return string endpoint url
@@ -326,16 +332,21 @@ abstract class PaymentService extends \Object
     /**
      * Generate a service response
      * @param int $flags a combination of service flags
-     * @param AbstractResponse|null $omnipayResponse the response from the Omnipay gateway
+     * @param AbstractResponse|NotificationInterface|null $omnipayData the response or notification from the Omnipay gateway
      * @return ServiceResponse
      */
     protected function generateServiceResponse(
         $flags,
-        AbstractResponse $omnipayResponse = null
+        $omnipayData = null
     ) {
         $response = new ServiceResponse($this->payment, $flags);
-        if($omnipayResponse){
-            $response->setOmnipayResponse($omnipayResponse);
+
+        if($omnipayData instanceof AbstractResponse){
+            $response->setOmnipayResponse($omnipayData);
+        }
+
+        if($omnipayData instanceof NotificationInterface){
+            $response->setOmnipayNotification($omnipayData);
         }
 
         if($response->isNotification()){

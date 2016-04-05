@@ -46,7 +46,7 @@ class RefundService extends PaymentService
         }
 
         if (empty($reference)) {
-            throw new MissingParameterException('transactionReference not found and not set as parameter');
+            throw new MissingParameterException('transactionReference not found and is not set as parameter');
         }
 
         $gateway = $this->oGateway();

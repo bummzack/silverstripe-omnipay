@@ -3,6 +3,7 @@
 namespace SilverStripe\Omnipay\Service;
 
 use Omnipay\Common\Message\AbstractResponse;
+use Omnipay\Common\Message\NotificationInterface;
 use SilverStripe\Omnipay\Exception\ServiceException;
 
 /**
@@ -42,9 +43,14 @@ class ServiceResponse
     const SERVICE_CANCELLED = 8;
 
     /**
-     * @var \Omnipay\Common\Message\ResponseInterface
+     * @var \Omnipay\Common\Message\AbstractResponse
      */
     protected $omnipayResponse;
+
+    /**
+     * @var \Omnipay\Common\Message\NotificationInterface
+     */
+    protected $omnipayNotification;
 
     /**
      * @var int
@@ -228,7 +234,7 @@ class ServiceResponse
 
     /**
      * Set the response from Omnipay
-     * @param AbstractResponse $response the response from the omnipay gateway
+     * @param AbstractResponse $response the response from the Omnipay gateway
      * @return $this
      */
     public function setOmnipayResponse(AbstractResponse $response)
@@ -241,6 +247,26 @@ class ServiceResponse
                 $this->targetUrl = $redirectResponse->getTargetUrl();
             }
         }
+        return $this;
+    }
+
+    /**
+     * Get the notification given by the omnipay gateway
+     * @return \Omnipay\Common\Message\NotificationInterface|null
+     */
+    public function getOmnipayNotification()
+    {
+        return $this->omnipayNotification;
+    }
+
+    /**
+     * Set the notification from Omnipay
+     * @param \Omnipay\Common\Message\NotificationInterface $notification the notification from the Omnipay gateway
+     * @return $this
+     */
+    public function setOmnipayNotification(NotificationInterface $notification)
+    {
+        $this->omnipayNotification = $notification;
         return $this;
     }
 

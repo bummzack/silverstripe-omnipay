@@ -54,7 +54,7 @@ class PaymentGatewayController extends \Controller
 		$payment = $this->getPayment();
 
 		if (!$payment) {
-			$this->httpError(404, _t("Payment.NOTFOUND", "Payment could not be found."));
+			$this->httpError(404, _t('Payment.NOTFOUND', 'Payment could not be found.'));
             return $response;
 		}
 
@@ -69,11 +69,14 @@ class PaymentGatewayController extends \Controller
             case 'PendingPurchase':
                 $intent = ServiceFactory::INTENT_PURCHASE;
                 break;
+            case 'PendingRefund':
+                $intent = ServiceFactory::INTENT_REFUND;
+                break;
             default:
                 $this->httpError(404, _t('Payment.InvalidStatus', 'Invalid/unhandled payment status'));
                 return $response;
         }
-        
+
 		$service = ServiceFactory::create()->getService($payment, $intent);
 
 		//do the payment update
@@ -91,7 +94,7 @@ class PaymentGatewayController extends \Controller
                 $response = $serviceResponse->redirectOrRespond();
 				break;
 			default:
-				$this->httpError(404, _t("Payment.INVALIDURL", "Invalid payment url."));
+				$this->httpError(404, _t('Payment.INVALIDURL', 'Invalid payment url.'));
 		}
 
 		return $response;
