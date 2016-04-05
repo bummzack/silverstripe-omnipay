@@ -152,7 +152,7 @@ class PaymentServiceTest extends PaymentTest
         $service = $this->factory->getService($payment, ServiceFactory::INTENT_PURCHASE);
 
         //--------------------------------------------------------------------------------------------------------------
-        // Refund request and response
+        // Notification response
 
         $notificationResponse = $this->getMockBuilder($contract)
             ->disableOriginalConstructor()->getMock();

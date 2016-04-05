@@ -17,6 +17,7 @@ Payment:
     MoneyAmount: 769.50
     MoneyCurrency: AUD
     Status: Captured
+    Identifier: c3b502a48a4740c063e1732de4cc8077
   payment4:
     Gateway: UknownGateway
     MoneyAmount: 2.50
@@ -52,3 +53,7 @@ GatewayMessage:
   message4:
     ClassName: AuthorizeRedirectResponse
     PaymentID: =>Payment.payment5
+  message5:
+    ClassName: PurchasedResponse
+    Reference: paymentReceipt
+    PaymentID: =>Payment.payment3

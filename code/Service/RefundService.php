@@ -6,6 +6,7 @@ use Omnipay\Common\Message\NotificationInterface;
 use SilverStripe\Omnipay\Exception\InvalidStateException;
 use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
 use SilverStripe\Omnipay\Exception\MissingParameterException;
+use SilverStripe\Omnipay\GatewayInfo;
 
 class RefundService extends PaymentService
 {
@@ -38,8 +39,10 @@ class RefundService extends PaymentService
             if (!empty($data['receipt'])) { // legacy code?
                 $reference = $data['receipt'];
             } else {
-                $msg = $this->payment->getLatestMessageOfType(array('CapturedResponse', 'PurchasedResponse'))
-                    ->where('"Reference" IS NOT NULL');
+                $msg = $this->payment->Messages()
+                    ->filter('ClassName', array('CapturedResponse', 'PurchasedResponse'))
+                    ->where('"Reference" IS NOT NULL')
+                    ->first();
 
                 $reference = $msg ? $msg->Reference : null;
             }
@@ -61,7 +64,8 @@ class RefundService extends PaymentService
             array(
                 'amount' => (float)$this->payment->MoneyAmount,
                 'currency' => $this->payment->MoneyCurrency,
-                'transactionReference' => $reference
+                'transactionReference' => $reference,
+                'notifyUrl' => $this->getEndpointUrl('notify')
             )
         );
 

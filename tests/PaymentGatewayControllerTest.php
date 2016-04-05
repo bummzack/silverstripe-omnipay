@@ -69,6 +69,13 @@ class PaymentGatewayControllerTest extends PaymentTest{
 		$this->assertEquals(404, $response->getStatusCode());
 	}
 
+    public function testInvalidStatus()
+    {
+        // try to complete a payment that has status "Created"
+        $response = $this->get("paymentendpoint/ce3a0b03349078d8e85d1de8ded3f0/complete");
+        $this->assertEquals($response->getStatusCode(), 403);
+    }
+
 	public function testSecurity() {
 		//$this->get(); //mimic mallicious activity
 		//incorrect security token

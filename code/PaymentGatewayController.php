@@ -55,7 +55,6 @@ class PaymentGatewayController extends \Controller
 
 		if (!$payment) {
 			$this->httpError(404, _t('Payment.NOTFOUND', 'Payment could not be found.'));
-            return $response;
 		}
 
         $intent = null;
@@ -73,8 +72,7 @@ class PaymentGatewayController extends \Controller
                 $intent = ServiceFactory::INTENT_REFUND;
                 break;
             default:
-                $this->httpError(404, _t('Payment.InvalidStatus', 'Invalid/unhandled payment status'));
-                return $response;
+                $this->httpError(403, _t('Payment.InvalidStatus', 'Invalid/unhandled payment status'));
         }
 
 		$service = ServiceFactory::create()->getService($payment, $intent);

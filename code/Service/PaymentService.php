@@ -65,11 +65,6 @@ abstract class PaymentService extends \Object
      */
     protected $gatewayFactory;
 
-    private static $dependencies = array(
-        'gatewayFactory' => '%$\Omnipay\Common\GatewayFactory',
-    );
-
-
     /**
      * @param \Payment
      */
@@ -388,17 +383,17 @@ abstract class PaymentService extends \Object
             $output = $data;
         } elseif ($data instanceof OmnipayException) {
             $output = array(
-                "Message" => $data->getMessage(),
-                "Code" => $data->getCode(),
-                "Exception" => get_class($data),
-                "Backtrace" => $data->getTraceAsString()
+                'Message' => $data->getMessage(),
+                'Code' => $data->getCode(),
+                'Exception' => get_class($data),
+                'Backtrace' => $data->getTraceAsString()
             );
         } elseif ($data instanceof AbstractResponse) {
             $output = array(
-                "Message" => $data->getMessage(),
-                "Code" => $data->getCode(),
-                "Reference" => $data->getTransactionReference(),
-                "Data" => $data->getData()
+                'Message' => $data->getMessage(),
+                'Code' => $data->getCode(),
+                'Reference' => $data->getTransactionReference(),
+                'Data' => $data->getData()
             );
         } elseif ($data instanceof AbstractRequest) {
             $output = array(
@@ -408,7 +403,7 @@ abstract class PaymentService extends \Object
                 'Currency' => $data->getCurrency(),
                 'Description' => $data->getDescription(),
                 'TransactionId' => $data->getTransactionId(),
-                'TransactionReference' => $data->getTransactionReference(),
+                'Reference' => $data->getTransactionReference(),
                 'ClientIp' => $data->getClientIp(),
                 'ReturnUrl' => $data->getReturnUrl(),
                 'CancelUrl' => $data->getCancelUrl(),
@@ -417,15 +412,15 @@ abstract class PaymentService extends \Object
             );
         } elseif ($data instanceof NotificationInterface) {
             $output = array(
-                "Message" => $data->getMessage(),
-                "Code" => $data->getTransactionStatus(),
-                "Reference" => $data->getTransactionReference(),
-                "Data" => $data->getData()
+                'Message' => $data->getMessage(),
+                'Code' => $data->getTransactionStatus(),
+                'Reference' => $data->getTransactionReference(),
+                'Data' => $data->getData()
             );
         }
         $output = array_merge($output, array(
-            "PaymentID" => $this->payment->ID,
-            "Gateway" => $this->payment->Gateway
+            'PaymentID' => $this->payment->ID,
+            'Gateway' => $this->payment->Gateway
         ));
         $this->logToFile($output, $type);
         $message = $type::create($output);
