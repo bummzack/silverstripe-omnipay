@@ -6,6 +6,7 @@ use Omnipay\Common\Message\NotificationInterface;
 use SilverStripe\Omnipay\Exception\InvalidStateException;
 use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
 use SilverStripe\Omnipay\Exception\MissingParameterException;
+use SilverStripe\Omnipay\Exception\ServiceException;
 use SilverStripe\Omnipay\GatewayInfo;
 
 class RefundService extends PaymentService
@@ -127,9 +128,34 @@ class RefundService extends PaymentService
 
         $serviceResponse = $this->handleNotification();
 
+        // exit early
+        if($serviceResponse->isError()){
+            return $serviceResponse;
+        }
+
+        // Find the refund request message
+        $msg = $this->payment->Messages()
+            ->filter('ClassName', array('RefundRequest'))
+            ->where('"Reference" IS NOT NULL')
+            ->first();
+
+        // safety check the payment number against the transaction reference we get from the notification
+        if (!(
+            $msg &&
+            $serviceResponse->getOmnipayNotification() &&
+            $serviceResponse->getOmnipayNotification()->getTransactionReference() == $msg->Reference
+        )) {
+            // flag as an error if transaction references don't match or aren't available
+            $serviceResponse->addFlag(ServiceResponse::SERVICE_ERROR);
+            $this->createMessage(
+                'RefundError',
+                $msg  ? 'No transaction reference found for this Payment!' : 'Transaction references do not match!'
+            );
+        }
+
         // check if we're done
         if (!$serviceResponse->isError() && !$serviceResponse->isAwaitingNotification()) {
-            $this->createMessage('RefundedResponse', 'Refund confirmed via notification');
+            $this->createMessage('RefundedResponse', $serviceResponse->getOmnipayNotification());
             $this->payment->Status = 'Refunded';
             $this->payment->write();
             $this->payment->extend('onRefunded', $serviceResponse);

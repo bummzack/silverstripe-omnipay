@@ -280,7 +280,7 @@ class ServiceResponse
      *
      * If none of these parameters are given, this method will return null
      *
-     * @return null|\SS_HTTPResponse
+     * @return \SS_HTTPResponse
      */
     public function redirectOrRespond()
     {
@@ -302,7 +302,10 @@ class ServiceResponse
             return \Controller::curr()->redirect($this->targetUrl);
         }
 
-        return null;
+        // return some default HTTP responses
+        return $this->isError()
+            ? new \SS_HTTPResponse("NOK", 500)
+            : new \SS_HTTPResponse("OK", 200);
     }
 
     /**

@@ -28,7 +28,10 @@ class ServiceResponseTest extends SapphireTest
         $this->assertNull($response->getOmnipayResponse());
         $this->assertNull($response->getOmnipayNotification());
         $this->assertNull($response->getHttpResponse());
-        $this->assertNull($response->redirectOrRespond());
+
+        $defaultHttpResponse = $response->redirectOrRespond();
+        $this->assertEquals($defaultHttpResponse->getStatusCode(), 200);
+        $this->assertEquals($defaultHttpResponse->getBody(), "OK");
 
         $this->assertEquals($response->getPayment(), $this->payment);
     }

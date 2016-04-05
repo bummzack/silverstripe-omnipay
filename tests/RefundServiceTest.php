@@ -269,6 +269,9 @@ class RefundServiceTest extends PaymentTest
         $notificationResponse->expects($this->any())
             ->method('getTransactionStatus')->will($this->returnValue($returnState));
 
+        $notificationResponse->expects($this->any())
+            ->method('getTransactionReference')->will($this->returnValue($transactionReference));
+
 
         //--------------------------------------------------------------------------------------------------------------
         // Build the gateway

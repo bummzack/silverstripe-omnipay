@@ -344,14 +344,8 @@ abstract class PaymentService extends \Object
             $response->setOmnipayNotification($omnipayData);
         }
 
-        if($response->isNotification()){
-            // set explicit HTTP responses for notifications
-            $httpResponse = $response->isError()
-                ? new \SS_HTTPResponse("NOK", 500)
-                : new \SS_HTTPResponse("OK", 200);
-
-            $response->setHttpResponse($httpResponse);
-        } else if(!$response->isRedirect()){ // redirects don't need a target URL.
+        // redirects and notifications don't need a target URL.
+        if(!$response->isNotification() && !$response->isRedirect()){
             $response->setTargetUrl(
                 ($response->isError() || $response->isCancelled())
                     ? $this->getCancelUrl()
