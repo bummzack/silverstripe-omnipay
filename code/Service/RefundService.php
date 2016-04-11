@@ -2,15 +2,17 @@
 
 namespace SilverStripe\Omnipay\Service;
 
-use Omnipay\Common\Message\NotificationInterface;
 use SilverStripe\Omnipay\Exception\InvalidStateException;
 use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
 use SilverStripe\Omnipay\Exception\MissingParameterException;
-use SilverStripe\Omnipay\Exception\ServiceException;
-use SilverStripe\Omnipay\GatewayInfo;
+use Omnipay\Common\Exception\OmnipayException;
 
-class RefundService extends PaymentService
+class RefundService extends NotificationCompleteService
 {
+    protected $endState = 'Refunded';
+    protected $pendingState = 'PendingRefund';
+    protected $requestMessageType = 'RefundRequest';
+    protected $errorMessageType = 'RefundError';
 
     /**
      * Return money to the previously charged credit card.
@@ -74,13 +76,13 @@ class RefundService extends PaymentService
         $request = $this->oGateway()->refund($gatewayData);
         $this->extend('onAfterRefund', $request);
 
-        $message = $this->createMessage('RefundRequest', $request);
+        $message = $this->createMessage($this->requestMessageType, $request);
         $message->write();
 
         try {
             $response = $this->response = $request->send();
-        } catch (\Omnipay\Common\Exception\OmnipayException $e) {
-            $this->createMessage('RefundError', $e);
+        } catch (OmnipayException $e) {
+            $this->createMessage($this->errorMessageType, $e);
             return $this->generateServiceResponse(ServiceResponse::SERVICE_ERROR);
         }
 
@@ -89,79 +91,25 @@ class RefundService extends PaymentService
         $serviceResponse = $this->wrapOmnipayResponse($response);
 
         if ($serviceResponse->isAwaitingNotification()) {
-            $this->payment->Status = 'PendingRefund';
+            $this->payment->Status = $this->pendingState;
             $this->payment->write();
         } else {
             if ($serviceResponse->isError()) {
-                $this->createMessage('RefundError', $response);
+                $this->createMessage($this->errorMessageType, $response);
             } else {
-                $this->createMessage('RefundedResponse', $response);
-                $this->payment->Status = 'Refunded';
-                $this->payment->write();
-                $this->payment->extend('onRefunded', $serviceResponse);
+                $this->markCompleted($serviceResponse, $response);
             }
         }
 
         return $serviceResponse;
     }
 
-    /**
-     * Complete a pending refund.
-     * This is only needed for notification, so this method will always assume $isNotification is true!
-     *
-     * @param array $data
-     * @param bool $isNotification
-     * @return ServiceResponse
-     * @throws InvalidConfigurationException
-     * @throws InvalidStateException
-     */
-    public function complete($data = array(), $isNotification = true)
+    protected function markCompleted(ServiceResponse $serviceResponse, $gatewayMessage)
     {
-        // The payment is already refunded
-        if ($this->payment->Status === 'Refunded') {
-            return $this->generateServiceResponse(ServiceResponse::SERVICE_NOTIFICATION);
-        }
-
-        if ($this->payment->Status !== 'PendingRefund') {
-            throw new InvalidStateException('Cannot complete this payment. Status is not "PendingRefund"');
-        }
-
-        $serviceResponse = $this->handleNotification();
-
-        // exit early
-        if($serviceResponse->isError()){
-            return $serviceResponse;
-        }
-
-        // Find the refund request message
-        $msg = $this->payment->Messages()
-            ->filter('ClassName', array('RefundRequest'))
-            ->where('"Reference" IS NOT NULL')
-            ->first();
-
-        // safety check the payment number against the transaction reference we get from the notification
-        if (!(
-            $msg &&
-            $serviceResponse->getOmnipayNotification() &&
-            $serviceResponse->getOmnipayNotification()->getTransactionReference() == $msg->Reference
-        )) {
-            // flag as an error if transaction references don't match or aren't available
-            $serviceResponse->addFlag(ServiceResponse::SERVICE_ERROR);
-            $this->createMessage(
-                'RefundError',
-                $msg  ? 'No transaction reference found for this Payment!' : 'Transaction references do not match!'
-            );
-        }
-
-        // check if we're done
-        if (!$serviceResponse->isError() && !$serviceResponse->isAwaitingNotification()) {
-            $this->createMessage('RefundedResponse', $serviceResponse->getOmnipayNotification());
-            $this->payment->Status = 'Refunded';
-            $this->payment->write();
-            $this->payment->extend('onRefunded', $serviceResponse);
-        }
-
-        return $serviceResponse;
+        $this->createMessage('RefundedResponse', $gatewayMessage);
+        $this->payment->Status = $this->endState;
+        $this->payment->write();
+        $this->payment->extend('onRefunded', $serviceResponse);
     }
 
 

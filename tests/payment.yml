@@ -29,6 +29,12 @@ Payment:
     MoneyCurrency: USD
     Status: PendingAuthorization
     Identifier: 62b26e0a8a77f60cce3e9a7994087b0e
+  payment6:
+    Gateway: PaymentExpress_PxPay
+    MoneyAmount: 123.45
+    MoneyCurrency: USD
+    Status: Authorized
+    Identifier: 51efcc0e94718dd80d97b1281762a9bc
 
 GatewayMessage:
   message1:
@@ -57,3 +63,7 @@ GatewayMessage:
     ClassName: PurchasedResponse
     Reference: paymentReceipt
     PaymentID: =>Payment.payment3
+  message6:
+    ClassName: AuthorizedResponse
+    Reference: authorizedPaymentReceipt
+    PaymentID: =>Payment.payment6
