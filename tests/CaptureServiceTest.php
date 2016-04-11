@@ -41,11 +41,11 @@ class CaptureServiceTest extends PaymentTest
                 'ClassName' => 'AuthorizedResponse',
                 'Reference' => 'authorizedPaymentReceipt'
             ),
-            array( // the generated refund request
+            array( // the generated Capture request
                 'ClassName' => 'CaptureRequest',
                 'Reference' => 'authorizedPaymentReceipt'
             ),
-            array( // the generated refund response
+            array( // the generated Capture response
                 'ClassName' => 'CapturedResponse',
                 'Reference' => 'authorizedPaymentReceipt'
             )
@@ -64,7 +64,7 @@ class CaptureServiceTest extends PaymentTest
         // register our mock gateway factory as injection
         Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
 
-        /** @var RefundService $service */
+        /** @var CaptureService $service */
         $service = CaptureService::create($this->payment);
 
         // pass transaction reference as parameter
@@ -72,7 +72,7 @@ class CaptureServiceTest extends PaymentTest
 
         // the service should not respond with an error
         $this->assertFalse($serviceResponse->isError());
-        // with a successful refund, we get a successful Omnipay response
+        // with a successful capture, we get a successful Omnipay response
         $this->assertNotNull($serviceResponse->getOmnipayResponse());
         $this->assertTrue($serviceResponse->getOmnipayResponse()->isSuccessful());
         // check payment status
@@ -80,11 +80,11 @@ class CaptureServiceTest extends PaymentTest
 
         // check existance of messages and existence of references
         $this->assertDOSContains(array(
-            array( // the generated refund request
+            array( // the generated capture request
                 'ClassName' => 'CaptureRequest',
                 'Reference' => 'testThisRecipe123'
             ),
-            array( // the generated refund response
+            array( // the generated capture response
                 'ClassName' => 'CapturedResponse',
                 'Reference' => 'testThisRecipe123'
             )
