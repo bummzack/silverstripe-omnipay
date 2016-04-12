@@ -4,6 +4,10 @@ class AuthorizeRequest extends GatewayRequestMessage
 {
 }
 
+class AwaitingAuthorizeResponse extends GatewayResponseMessage
+{
+}
+
 class AuthorizedResponse extends GatewayResponseMessage
 {
 }

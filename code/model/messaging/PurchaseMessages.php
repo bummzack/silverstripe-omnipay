@@ -4,6 +4,10 @@ class PurchaseRequest extends GatewayRequestMessage
 {
 }
 
+class AwaitingPurchaseResponse extends GatewayResponseMessage
+{
+}
+
 class PurchasedResponse extends GatewayResponseMessage
 {
 }
