@@ -71,6 +71,9 @@ class PaymentGatewayController extends \Controller
             case 'PendingRefund':
                 $intent = ServiceFactory::INTENT_REFUND;
                 break;
+            case 'PendingVoid':
+                $intent = ServiceFactory::INTENT_VOID;
+                break;
             default:
                 $this->httpError(403, _t('Payment.InvalidStatus', 'Invalid/unhandled payment status'));
         }

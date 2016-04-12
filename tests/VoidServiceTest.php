@@ -1,39 +1,37 @@
 <?php
 
-use SilverStripe\Omnipay\Service\CaptureService;
+use SilverStripe\Omnipay\Service\VoidService;
 use Omnipay\Common\Message\NotificationInterface;
 
 
 //TODO: This shares a lot of duplicate code with RefundServiceTest.
 //TODO: Maybe merge or simplify this, similar to the authorize and purchase tests.
 /**
- * Test the capture service
+ * Test the void service
  */
-class CaptureServiceTest extends PaymentTest
+class VoidServiceTest extends PaymentTest
 {
-    public function testCaptureSuccess()
+    public function testVoidSuccess()
     {
         // load an authorized payment from fixture
         $payment = $this->objFromFixture("Payment", "payment6");
-
-        $this->assertEquals($payment->Status, 'Authorized', 'Payment status should be set to Authorized');
 
         $stubGateway = $this->buildPaymentGatewayStub(true, 'authorizedPaymentReceipt');
         // register our mock gateway factory as injection
         Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
 
-        /** @var CaptureService $service */
-        $service = CaptureService::create($payment);
+        /** @var VoidService $service */
+        $service = VoidService::create($payment);
 
         $serviceResponse = $service->initiate();
 
         // the service should not respond with an error
         $this->assertFalse($serviceResponse->isError());
-        // with a successful capture, we get a successful Omnipay response
+        // with a successful "voiding", we get a successful Omnipay response
         $this->assertNotNull($serviceResponse->getOmnipayResponse());
         $this->assertTrue($serviceResponse->getOmnipayResponse()->isSuccessful());
         // check payment status
-        $this->assertEquals($payment->Status, 'Captured', 'Payment status should be set to captured');
+        $this->assertEquals($payment->Status, 'Void', 'Payment status should be set to Void');
 
         // check existance of messages and existence of references
         $this->assertDOSContains(array(
@@ -41,12 +39,12 @@ class CaptureServiceTest extends PaymentTest
                 'ClassName' => 'AuthorizedResponse',
                 'Reference' => 'authorizedPaymentReceipt'
             ),
-            array( // the generated Capture request
-                'ClassName' => 'CaptureRequest',
+            array( // the generated void request
+                'ClassName' => 'VoidRequest',
                 'Reference' => 'authorizedPaymentReceipt'
             ),
-            array( // the generated Capture response
-                'ClassName' => 'CapturedResponse',
+            array( // the generated void response
+                'ClassName' => 'VoidedResponse',
                 'Reference' => 'authorizedPaymentReceipt'
             )
         ), $payment->Messages());
@@ -55,7 +53,7 @@ class CaptureServiceTest extends PaymentTest
         Injector::inst()->unregisterNamedObject('Omnipay\Common\GatewayFactory');
     }
 
-    public function testCaptureSuccessWithTransactionParameter()
+    public function testVoidSuccessWithTransactionParameter()
     {
         // load an authorized payment from fixture
         $this->payment->Status = 'Authorized';
@@ -64,28 +62,28 @@ class CaptureServiceTest extends PaymentTest
         // register our mock gateway factory as injection
         Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
 
-        /** @var CaptureService $service */
-        $service = CaptureService::create($this->payment);
+        /** @var VoidService $service */
+        $service = VoidService::create($this->payment);
 
         // pass transaction reference as parameter
         $serviceResponse = $service->initiate(array('transactionReference' => 'testThisRecipe123'));
 
         // the service should not respond with an error
         $this->assertFalse($serviceResponse->isError());
-        // with a successful capture, we get a successful Omnipay response
+        // when "voiding" successfully, we get a successful Omnipay response
         $this->assertNotNull($serviceResponse->getOmnipayResponse());
         $this->assertTrue($serviceResponse->getOmnipayResponse()->isSuccessful());
         // check payment status
-        $this->assertEquals($this->payment->Status, 'Captured', 'Payment status should be set to captured');
+        $this->assertEquals($this->payment->Status, 'Void', 'Payment status should be set to Void');
 
         // check existance of messages and existence of references
         $this->assertDOSContains(array(
-            array( // the generated capture request
-                'ClassName' => 'CaptureRequest',
+            array( // the generated void request
+                'ClassName' => 'VoidRequest',
                 'Reference' => 'testThisRecipe123'
             ),
-            array( // the generated capture response
-                'ClassName' => 'CapturedResponse',
+            array( // the generated void response
+                'ClassName' => 'VoidedResponse',
                 'Reference' => 'testThisRecipe123'
             )
         ), $this->payment->Messages());
@@ -94,7 +92,7 @@ class CaptureServiceTest extends PaymentTest
         Injector::inst()->unregisterNamedObject('Omnipay\Common\GatewayFactory');
     }
 
-    public function testCaptureSuccessViaNotification()
+    public function testVoidSuccessViaNotification()
     {
         // load an authorized payment from fixture
         $payment = $this->objFromFixture("Payment", "payment6");
@@ -108,21 +106,21 @@ class CaptureServiceTest extends PaymentTest
         // register our mock gateway factory as injection
         Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
 
-        /** @var CaptureService $service */
-        $service = CaptureService::create($payment);
+        /** @var VoidService $service */
+        $service = VoidService::create($payment);
 
         // pass transaction reference as parameter
         $serviceResponse = $service->initiate();
 
         // the service should not respond with an error
         $this->assertFalse($serviceResponse->isError());
-        // A capture waiting for a notification won't be successful from Omnipays point of view
+        // When waiting for a notification, request won't be successful from Omnipays point of view
         $this->assertNotNull($serviceResponse->getOmnipayResponse());
         $this->assertFalse($serviceResponse->getOmnipayResponse()->isSuccessful());
         // response should have the "AwaitingNotification" flag
         $this->assertTrue($serviceResponse->isAwaitingNotification());
         // check payment status
-        $this->assertEquals($payment->Status, 'PendingCapture', 'Payment status should be set to "PendingCapture"');
+        $this->assertEquals($payment->Status, 'PendingVoid', 'Payment status should be set to "PendingVoid"');
 
         // check existance of messages and existence of references
         $this->assertDOSContains(array(
@@ -130,8 +128,8 @@ class CaptureServiceTest extends PaymentTest
                 'ClassName' => 'AuthorizedResponse',
                 'Reference' => 'authorizedPaymentReceipt'
             ),
-            array( // the generated capture request
-                'ClassName' => 'CaptureRequest',
+            array( // the generated void request
+                'ClassName' => 'VoidRequest',
                 'Reference' => 'authorizedPaymentReceipt'
             )
         ), $payment->Messages());
@@ -144,18 +142,18 @@ class CaptureServiceTest extends PaymentTest
 
         // we'll have to "reload" the payment from the DB now
         $payment = Payment::get()->byID($payment->ID);
-        $this->assertEquals($payment->Status, 'Captured', 'Payment status should be set to "Captured"');
+        $this->assertEquals($payment->Status, 'Void', 'Payment status should be set to "Void"');
 
         // check existance of messages
         $this->assertDOSContains(array(
             array( // response that was loaded from the fixture
                 'ClassName' => 'AuthorizedResponse'
             ),
-            array( // the generated capture request
-                'ClassName' => 'CaptureRequest'
+            array( // the generated void request
+                'ClassName' => 'VoidRequest'
             ),
-            array( // the generated capture response
-                'ClassName' => 'CapturedResponse'
+            array( // the generated void response
+                'ClassName' => 'VoidedResponse'
             )
         ), $payment->Messages());
 
@@ -163,7 +161,7 @@ class CaptureServiceTest extends PaymentTest
         Injector::inst()->unregisterNamedObject('Omnipay\Common\GatewayFactory');
     }
 
-    public function testCaptureFailure()
+    public function testVoidFailure()
     {
         // load an authorized payment from fixture
         $payment = $this->objFromFixture("Payment", "payment6");
@@ -172,8 +170,8 @@ class CaptureServiceTest extends PaymentTest
         // register our mock gateway factory as injection
         Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
 
-        /** @var CaptureService $service */
-        $service = CaptureService::create($payment);
+        /** @var VoidService $service */
+        $service = VoidService::create($payment);
 
         $serviceResponse = $service->initiate();
 
@@ -191,12 +189,12 @@ class CaptureServiceTest extends PaymentTest
                 'ClassName' => 'AuthorizedResponse',
                 'Reference' => 'authorizedPaymentReceipt'
             ),
-            array( // the generated capture request
-                'ClassName' => 'CaptureRequest',
+            array( // the generated void request
+                'ClassName' => 'VoidRequest',
                 'Reference' => 'authorizedPaymentReceipt'
             ),
-            array( // the generated capture response
-                'ClassName' => 'CaptureError',
+            array( // the generated void error
+                'ClassName' => 'VoidError',
                 'Reference' => 'authorizedPaymentReceipt'
             )
         ), $payment->Messages());
@@ -208,12 +206,13 @@ class CaptureServiceTest extends PaymentTest
     /**
      * @expectedException  \SilverStripe\Omnipay\Exception\InvalidStateException
      */
-    public function testCaptureInvalidStatus()
+    public function testVoidInvalidStatus()
     {
-        /** @var CaptureService $service */
         $this->payment->Status = 'Created';
-        // create a capture service with a payment that isn't captured
-        $service = CaptureService::create($this->payment);
+
+        // create a void service with a payment that is created
+        /** @var VoidService $service */
+        $service = VoidService::create($this->payment);
 
         // this should throw an exception
         $service->initiate();
@@ -222,13 +221,14 @@ class CaptureServiceTest extends PaymentTest
     /**
      * @expectedException  \SilverStripe\Omnipay\Exception\MissingParameterException
      */
-    public function testCaptureMissingTransactionReference()
+    public function testVoidMissingTransactionReference()
     {
-        /** @var CaptureService $service */
         $this->payment->Status = 'Authorized';
-        // create a capture service with a payment that is authorized,
+
+        // create a void service with a payment that could be cancelled,
         // but doesn't have any transaction references in messages
-        $service = CaptureService::create($this->payment);
+        /** @var VoidService $service */
+        $service = VoidService::create($this->payment);
 
         // this should throw an exception
         $service->initiate();
@@ -241,24 +241,24 @@ class CaptureServiceTest extends PaymentTest
         $returnState = NotificationInterface::STATUS_COMPLETED
     ) {
         //--------------------------------------------------------------------------------------------------------------
-        // capture request and response
+        // void request and response
 
-        $mockCaptureResponse = $this->getMockBuilder('Omnipay\Common\Message\AbstractResponse')
+        $mockVoidResponse = $this->getMockBuilder('Omnipay\Common\Message\AbstractResponse')
             ->disableOriginalConstructor()->getMock();
 
-        $mockCaptureResponse->expects($this->any())
+        $mockVoidResponse->expects($this->any())
             ->method('isSuccessful')->will($this->returnValue($successValue));
 
-        $mockCaptureResponse->expects($this->any())
+        $mockVoidResponse->expects($this->any())
             ->method('getTransactionReference')->will($this->returnValue($transactionReference));
 
-        $mockCaptureRequest = $this->getMockBuilder('Omnipay\Common\Message\AbstractRequest')
+        $mockVoidRequest = $this->getMockBuilder('Omnipay\Common\Message\AbstractRequest')
             ->disableOriginalConstructor()->getMock();
 
-        $mockCaptureRequest->expects($this->any())
-            ->method('send')->will($this->returnValue($mockCaptureResponse));
+        $mockVoidRequest->expects($this->any())
+            ->method('send')->will($this->returnValue($mockVoidResponse));
 
-        $mockCaptureRequest->expects($this->any())
+        $mockVoidRequest->expects($this->any())
             ->method('getTransactionReference')->will($this->returnValue($transactionReference));
 
         //--------------------------------------------------------------------------------------------------------------
@@ -278,12 +278,12 @@ class CaptureServiceTest extends PaymentTest
         // Build the gateway
 
         $stubGateway = $this->getMockBuilder('Omnipay\Common\AbstractGateway')
-            ->setMethods(array('capture', 'acceptNotification', 'getName'))
+            ->setMethods(array('void', 'acceptNotification', 'getName'))
             ->getMock();
 
         $stubGateway->expects($this->once())
-            ->method('capture')
-            ->will($this->returnValue($mockCaptureRequest));
+            ->method('void')
+            ->will($this->returnValue($mockVoidRequest));
 
         $stubGateway->expects($this->any())
             ->method('acceptNotification')
