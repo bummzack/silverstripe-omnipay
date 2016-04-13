@@ -133,9 +133,9 @@ class PurchaseService extends PaymentService
         // purchase and completePurchase should use the same data
         $gatewayData = $this->gatherGatewayData($data);
 
-        $this->payment->extend('onBeforeCompletePurchase', $gatewayData);
+        $this->extend('onBeforeCompletePurchase', $gatewayData);
         $request = $gateway->completePurchase($gatewayData);
-        $this->payment->extend('onAfterCompletePurchase', $request);
+        $this->extend('onAfterCompletePurchase', $request);
 
         $this->createMessage('CompletePurchaseRequest', $request);
         $response = null;

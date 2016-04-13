@@ -129,9 +129,9 @@ class AuthorizeService extends PaymentService
         // purchase and completePurchase should use the same data
         $gatewayData = $this->gatherGatewayData($data);
 
-        $this->payment->extend('onBeforeCompleteAuthorize', $gatewayData);
+        $this->extend('onBeforeCompleteAuthorize', $gatewayData);
         $request = $gateway->completeAuthorize($gatewayData);
-        $this->payment->extend('onAfterCompleteAuthorize', $request);
+        $this->extend('onAfterCompleteAuthorize', $request);
 
         $this->createMessage('CompleteAuthorizeRequest', $request);
         $response = null;

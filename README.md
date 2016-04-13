@@ -303,10 +303,10 @@ shippingPhone
 
 **Note:** `transactionId` can be a reference that identifies the thing you are paying for, such as an order reference id. It usually shows up on bank statements for reconciliation purposes, but ultimately depends how the gateway uses it.
 
-### onCaptured hook
+### Extension hooks
 
-To call your custom code when returning from an off-site gateway, you'll need to
-introduce an extension that utilises the onCaptured extension point.
+To call your custom code when a payment was captured, you'll need to
+introduce an extension that utilises the `onCaptured` extension hook.
 
 For example:
 
@@ -324,6 +324,8 @@ class ShopPayment extends DataExtension {
 
 }
 ```
+
+There are many other extension hooks available, you'll find them documented in [docs/en/ExtensionHooks.md](docs/en/ExtensionHooks.md)
 
 ## Security
 
