@@ -15,7 +15,7 @@ class AuthorizeService extends PaymentService
     public function getReturnUrl()
     {
         $value = parent::getReturnUrl();
-        if (!$value) {
+        if (!$value && $this->payment->isInDB()) {
             $msg = $this->payment->getLatestMessageOfType('AuthorizeRequest');
             $value = $msg ? $msg->SuccessURL : \Director::baseURL();
         }
@@ -29,7 +29,7 @@ class AuthorizeService extends PaymentService
     public function getCancelUrl()
     {
         $value = parent::getCancelUrl();
-        if (!$value) {
+        if (!$value && $this->payment->isInDB()) {
             $msg = $this->payment->getLatestMessageOfType('AuthorizeRequest');
             $value = $msg ? $msg->FailureURL : \Director::baseURL();
         }
