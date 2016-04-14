@@ -1,10 +1,6 @@
 <?php
 
-use Omnipay\Common\GatewayFactory;
-use Omnipay\Common\GatewayInterface;
-use SilverStripe\Omnipay\Service\ServiceFactory;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use SilverStripe\Omnipay\Service\PurchaseService;
 
 /**
  * Abstract base-class that implements common tests for "authorize" and "purchase".
@@ -33,6 +29,8 @@ abstract class BasePurchaseServiceTest extends PaymentTest
     protected $offsiteSuccessMessages;
     /** @var array an array of the expected messages for a failed offsite payment */
     protected $offsiteFailMessages;
+    /** @var  string name of the failure message class */
+    protected $failureMessageClass;
 
     /** @var string The ID of the payment (@see payment.yml) */
     protected $paymentId;
@@ -242,6 +240,94 @@ abstract class BasePurchaseServiceTest extends PaymentTest
         $service->initiate();
     }
 
+    /**
+     * @expectedException \SilverStripe\Omnipay\Exception\InvalidStateException
+     */
+    public function testPaymentInvalidStatus()
+    {
+        $payment = $this->payment;
+        $payment->Status = 'Void';
+        $service = $this->getService($payment);
+
+        $service->initiate();
+    }
+
+    /**
+     * @expectedException \SilverStripe\Omnipay\Exception\InvalidStateException
+     */
+    public function testCompletePaymentInvalidStatus()
+    {
+        $payment = $this->payment;
+        $payment->Status = 'Void';
+        $service = $this->getService($payment);
+
+        $service->complete();
+    }
+
+    /**
+     * @expectedException \SilverStripe\Omnipay\Exception\InvalidConfigurationException
+     */
+    public function testGatewayDoesntSupportMethod()
+    {
+        // Build the dummy gateway
+        $stubGateway = $this->getMockBuilder('Omnipay\Common\AbstractGateway')
+            ->setMethods(array('getName'))
+            ->getMock();
+
+        // register our mock gateway factory as injection
+        Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
+
+        $this->payment->Status = 'Created';
+        $service = $this->getService($this->payment);
+        // this should throw an exception, because the gateway doesn't support the payment method
+        $service->initiate();
+    }
+
+    /**
+     * @expectedException \SilverStripe\Omnipay\Exception\InvalidConfigurationException
+     */
+    public function testGatewayDoesntSupportCompleteMethod()
+    {
+        // Build the dummy gateway
+        $stubGateway = $this->getMockBuilder('Omnipay\Common\AbstractGateway')
+            ->setMethods(array('getName'))
+            ->getMock();
+
+        // register our mock gateway factory as injection
+        Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
+
+        $this->payment->Status = $this->pendingStatus;
+        $service = $this->getService($this->payment);
+        // this should throw an exception, because the gateway doesn't support the complete method
+        $service->complete();
+    }
+
+    public function testGatewayCompleteMethodFailure()
+    {
+        // build a stub gateway with the given endpoint
+        $stubGateway = $this->buildPaymentGatewayStub('https://gateway.tld/endpoint', function () {
+            return true;
+        }, true);
+
+        // register our mock gateway factory as injection
+        Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
+
+        $this->payment->Status = $this->pendingStatus;
+        $service = $this->getService($this->payment);
+
+        // this should return an error response
+        $serviceResponse = $service->complete();
+
+        $this->assertTrue($serviceResponse->isError());
+        $this->assertNull($serviceResponse->getOmnipayResponse());
+        $this->assertDOSContains(array(
+            array(
+                'ClassName' => $this->failureMessageClass,
+                'Message' => 'Mock Exception'
+            )
+        ), $this->payment->Messages());
+    }
+
 
     public function testTokenGateway()
     {
@@ -416,7 +502,7 @@ abstract class BasePurchaseServiceTest extends PaymentTest
         $this->assertEquals($payment->Status, $this->completeStatus);
     }
 
-    protected function buildPaymentGatewayStub($endpoint, callable $successFunc)
+    protected function buildPaymentGatewayStub($endpoint, callable $successFunc, $sendMustFail = false)
     {
         //--------------------------------------------------------------------------------------------------------------
         // Payment request and response
@@ -434,7 +520,13 @@ abstract class BasePurchaseServiceTest extends PaymentTest
         $mockPaymentRequest = $this->getMockBuilder('Omnipay\PaymentExpress\Message\PxPayPurchaseRequest')
             ->disableOriginalConstructor()->getMock();
 
-        $mockPaymentRequest->expects($this->any())->method('send')->will($this->returnValue($mockPaymentResponse));
+        if($sendMustFail){
+            $mockPaymentRequest->expects($this->any())->method('send')->will($this->throwException(
+                new \Omnipay\Common\Exception\RuntimeException('Mock Exception')
+            ));
+        } else {
+            $mockPaymentRequest->expects($this->any())->method('send')->will($this->returnValue($mockPaymentResponse));
+        }
 
         //--------------------------------------------------------------------------------------------------------------
         // Complete Payment request and response
@@ -449,8 +541,14 @@ abstract class BasePurchaseServiceTest extends PaymentTest
         $mockCompletePaymentRequest = $this->getMockBuilder('Omnipay\PaymentExpress\Message\PxPayCompleteAuthorizeRequest')
             ->disableOriginalConstructor()->getMock();
 
-        $mockCompletePaymentRequest->expects($this->any())
-            ->method('send')->will($this->returnValue($mockCompletePaymentResponse));
+        if($sendMustFail){
+            $mockCompletePaymentRequest->expects($this->any())->method('send')->will($this->throwException(
+                new \Omnipay\Common\Exception\RuntimeException('Mock Exception')
+            ));
+        } else {
+            $mockCompletePaymentRequest->expects($this->any())
+                ->method('send')->will($this->returnValue($mockCompletePaymentResponse));
+        }
 
         //--------------------------------------------------------------------------------------------------------------
         // Build the gateway
@@ -459,7 +557,7 @@ abstract class BasePurchaseServiceTest extends PaymentTest
             ->setMethods(array($this->omnipayMethod, $this->omnipayCompleteMethod, 'getName'))
             ->getMock();
 
-        $stubGateway->expects($this->once())
+        $stubGateway->expects($sendMustFail ? $this->any() : $this->once())
             ->method($this->omnipayMethod)
             ->will($this->returnValue($mockPaymentRequest));
 

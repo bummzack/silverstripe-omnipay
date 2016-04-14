@@ -92,6 +92,33 @@ class ServiceResponseTest extends SapphireTest
         $this->assertFalse($response->hasFlag(ServiceResponse::SERVICE_NOTIFICATION));
     }
 
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testInvalidAddFlag()
+    {
+        $response = new ServiceResponse($this->payment);
+        $response->addFlag("Test");
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testInvalidHasFlag()
+    {
+        $response = new ServiceResponse($this->payment);
+        $response->hasFlag("Test");
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testInvalidRemoveFlag()
+    {
+        $response = new ServiceResponse($this->payment);
+        $response->removeFlag("Test");
+    }
+
     public function testResponse()
     {
         $response = new ServiceResponse($this->payment);
@@ -144,6 +171,46 @@ class ServiceResponseTest extends SapphireTest
         $httpResponse = $response->redirectOrRespond();
         $this->assertEquals($httpResponse->getHeader('Location'), 'https://gateway.tld/endpoint');
         $this->assertEquals($httpResponse->getStatusCode(), 302);
+
+        // tryin to set the URL now should trigger an exception
+        $response->setTargetUrl('/my/endpoint');
+    }
+
+    // Omnipay can also return a response that contains a self-submitting form
+    /**
+     * @expectedException \SilverStripe\Omnipay\Exception\ServiceException
+     */
+    public function testPostRedirectResponse()
+    {
+        $response = new ServiceResponse($this->payment);
+        $response->setTargetUrl('/my/target/url');
+
+        $mockPurchaseResponse = $this->getMockBuilder('Omnipay\Common\Message\AbstractResponse')
+            ->disableOriginalConstructor()->getMock();
+
+        $mockPurchaseResponse->expects($this->any())
+            ->method('isRedirect')->will($this->returnValue(true));
+
+        $htmlResponse = \Symfony\Component\HttpFoundation\Response::create('SelfSubmittingForm HTML');
+        $mockPurchaseResponse->expects($this->any())
+            ->method('getRedirectResponse')
+            ->will($this->returnValue($htmlResponse));
+
+        // Assign an omnipay redirect response
+        $response->setOmnipayResponse($mockPurchaseResponse);
+
+        // Should be marked as redirect now
+        $this->assertTrue($response->isRedirect());
+        // the target URL should not have changed
+        $this->assertEquals($response->getTargetUrl(), '/my/target/url');
+
+        // explicitly set a response
+        $response->setHttpResponse(new SS_HTTPResponse('Body', 200));
+
+        // redirecting should always return the response from Omnipay, EVEN when the http response was set!
+        $httpResponse = $response->redirectOrRespond();
+        $this->assertEquals($httpResponse->getStatusCode(), 200);
+        $this->assertEquals($httpResponse->getBody(), 'SelfSubmittingForm HTML');
 
         // tryin to set the URL now should trigger an exception
         $response->setTargetUrl('/my/endpoint');

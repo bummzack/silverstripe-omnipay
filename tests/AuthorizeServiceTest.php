@@ -38,6 +38,8 @@ class AuthorizeServiceTest extends BasePurchaseServiceTest
         array('ClassName' => 'CompleteAuthorizeError')
     );
     
+    protected $failureMessageClass = 'CompleteAuthorizeError';
+    
     protected $paymentId = '62b26e0a8a77f60cce3e9a7994087b0e';
 
     protected function getService(Payment $payment)

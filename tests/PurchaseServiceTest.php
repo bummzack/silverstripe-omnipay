@@ -38,6 +38,8 @@ class PurchaseServiceTest extends BasePurchaseServiceTest
         array('ClassName' => 'CompletePurchaseError')
     );
 
+    protected $failureMessageClass = 'CompletePurchaseError';
+
     protected $paymentId = 'UNIQUEHASH23q5123tqasdf';
 
     protected function getService(Payment $payment)
