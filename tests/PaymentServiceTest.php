@@ -70,7 +70,11 @@ class PaymentServiceTest extends PaymentTest
         // response should be flagged as notification
         $this->assertTrue($serviceResponse->isNotification());
         // response should have an instance of the notification attached
-        $this->assertNotNull($serviceResponse->getOmnipayNotification());
+        $this->assertNotNull($serviceResponse->getOmnipayResponse());
+        $this->assertInstanceOf(
+            '\Omnipay\Common\Message\NotificationInterface',
+            $serviceResponse->getOmnipayResponse()
+        );
     }
 
     // Test an error notification
@@ -85,7 +89,11 @@ class PaymentServiceTest extends PaymentTest
         // response should be flagged as notification
         $this->assertTrue($serviceResponse->isNotification());
         // response should have an instance of the notification attached
-        $this->assertNotNull($serviceResponse->getOmnipayNotification());
+        $this->assertNotNull($serviceResponse->getOmnipayResponse());
+        $this->assertInstanceOf(
+            '\Omnipay\Common\Message\NotificationInterface',
+            $serviceResponse->getOmnipayResponse()
+        );
     }
 
     // Test a pending notification
@@ -102,7 +110,11 @@ class PaymentServiceTest extends PaymentTest
         // response should be flagged as pending
         $this->assertTrue($serviceResponse->isAwaitingNotification());
         // response should have an instance of the notification attached
-        $this->assertNotNull($serviceResponse->getOmnipayNotification());
+        $this->assertNotNull($serviceResponse->getOmnipayResponse());
+        $this->assertInstanceOf(
+            '\Omnipay\Common\Message\NotificationInterface',
+            $serviceResponse->getOmnipayResponse()
+        );
     }
 
     // Test a gateway that doesn't return an instance of NotificationInterface
@@ -120,8 +132,8 @@ class PaymentServiceTest extends PaymentTest
         $this->assertTrue($serviceResponse->isError());
         // response should be flagged as notification
         $this->assertTrue($serviceResponse->isNotification());
-        // response should NOT have an instance of the notification attached (since it's invalid)
-        $this->assertNull($serviceResponse->getOmnipayNotification());
+        // response should NOT have an instance of the response attached (since it's invalid)
+        $this->assertNull($serviceResponse->getOmnipayResponse());
     }
 
     /**

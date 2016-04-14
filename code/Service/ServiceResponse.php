@@ -43,14 +43,9 @@ class ServiceResponse
     const SERVICE_CANCELLED = 8;
 
     /**
-     * @var \Omnipay\Common\Message\AbstractResponse
+     * @var AbstractResponse|NotificationInterface
      */
     protected $omnipayResponse;
-
-    /**
-     * @var \Omnipay\Common\Message\NotificationInterface
-     */
-    protected $omnipayNotification;
 
     /**
      * @var int
@@ -106,7 +101,7 @@ class ServiceResponse
      */
     public function isRedirect()
     {
-        return $this->omnipayResponse && $this->omnipayResponse->isRedirect();
+        return ($this->omnipayResponse instanceof AbstractResponse) && $this->omnipayResponse->isRedirect();
     }
 
     /**
@@ -224,8 +219,9 @@ class ServiceResponse
     }
 
     /**
-     * Get the response given by the omnipay gateway
-     * @return \Omnipay\Common\Message\AbstractResponse|null
+     * Get the response given by the omnipay gateway.
+     * This can be an instance of AbstractResponse or NotificationInterface (in case of a notification)
+     * @return AbstractResponse|NotificationInterface|null
      */
     public function getOmnipayResponse()
     {
@@ -234,10 +230,10 @@ class ServiceResponse
 
     /**
      * Set the response from Omnipay
-     * @param AbstractResponse $response the response from the Omnipay gateway
+     * @param AbstractResponse|NotificationInterface $response the response or notification from the Omnipay gateway
      * @return $this
      */
-    public function setOmnipayResponse(AbstractResponse $response)
+    public function setOmnipayResponse($response)
     {
         $this->omnipayResponse = $response;
         // also set the target Url if the response is a redirect
@@ -247,26 +243,6 @@ class ServiceResponse
                 $this->targetUrl = $redirectResponse->getTargetUrl();
             }
         }
-        return $this;
-    }
-
-    /**
-     * Get the notification given by the omnipay gateway
-     * @return \Omnipay\Common\Message\NotificationInterface|null
-     */
-    public function getOmnipayNotification()
-    {
-        return $this->omnipayNotification;
-    }
-
-    /**
-     * Set the notification from Omnipay
-     * @param \Omnipay\Common\Message\NotificationInterface $notification the notification from the Omnipay gateway
-     * @return $this
-     */
-    public function setOmnipayNotification(NotificationInterface $notification)
-    {
-        $this->omnipayNotification = $notification;
         return $this;
     }
 

@@ -70,8 +70,8 @@ abstract class NotificationCompleteService extends PaymentService
         // safety check the payment number against the transaction reference we get from the notification
         if (!(
             $msg &&
-            $serviceResponse->getOmnipayNotification() &&
-            $serviceResponse->getOmnipayNotification()->getTransactionReference() == $msg->Reference
+            $serviceResponse->getOmnipayResponse() &&
+            $serviceResponse->getOmnipayResponse()->getTransactionReference() == $msg->Reference
         )) {
             // flag as an error if transaction references don't match or aren't available
             $serviceResponse->addFlag(ServiceResponse::SERVICE_ERROR);
@@ -83,7 +83,7 @@ abstract class NotificationCompleteService extends PaymentService
 
         // check if we're done
         if (!$serviceResponse->isError() && !$serviceResponse->isAwaitingNotification()) {
-            $this->markCompleted($serviceResponse, $serviceResponse->getOmnipayNotification());
+            $this->markCompleted($serviceResponse, $serviceResponse->getOmnipayResponse());
         }
 
         return $serviceResponse;

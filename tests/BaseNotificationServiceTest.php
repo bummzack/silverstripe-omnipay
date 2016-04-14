@@ -285,7 +285,7 @@ abstract class BaseNotificationServiceTest extends PaymentTest
         // the service should respond with an error
         $this->assertTrue($serviceResponse->isError());
         // There should be no omnipay notification, as the gateway threw an exception
-        $this->assertNull($serviceResponse->getOmnipayNotification());
+        $this->assertNull($serviceResponse->getOmnipayResponse());
         // payment status should be unchanged
         $this->assertEquals($payment->Status, $this->pendingStatus, 'Payment status should be unchanged');
     }
@@ -308,7 +308,11 @@ abstract class BaseNotificationServiceTest extends PaymentTest
         // the service should respond with an error
         $this->assertTrue($serviceResponse->isError());
         // There should be an omnipay notification
-        $this->assertNotNull($serviceResponse->getOmnipayNotification());
+        $this->assertNotNull($serviceResponse->getOmnipayResponse());
+        $this->assertInstanceOf(
+            '\Omnipay\Common\Message\NotificationInterface', 
+            $serviceResponse->getOmnipayResponse()
+        );
         // payment status should be unchanged
         $this->assertEquals($payment->Status, $this->pendingStatus, 'Payment status should be unchanged');
     }

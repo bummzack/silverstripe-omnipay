@@ -26,7 +26,6 @@ class ServiceResponseTest extends SapphireTest
         $this->assertFalse($response->isCancelled());
 
         $this->assertNull($response->getOmnipayResponse());
-        $this->assertNull($response->getOmnipayNotification());
         $this->assertNull($response->getHttpResponse());
 
         $defaultHttpResponse = $response->redirectOrRespond();

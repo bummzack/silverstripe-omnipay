@@ -336,12 +336,8 @@ abstract class PaymentService extends \Object
     ) {
         $response = new ServiceResponse($this->payment, $flags);
 
-        if($omnipayData instanceof AbstractResponse){
+        if($omnipayData){
             $response->setOmnipayResponse($omnipayData);
-        }
-
-        if($omnipayData instanceof NotificationInterface){
-            $response->setOmnipayNotification($omnipayData);
         }
 
         // redirects and notifications don't need a target URL.
