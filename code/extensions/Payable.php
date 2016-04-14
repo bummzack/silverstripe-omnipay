@@ -19,9 +19,9 @@ class Payable extends DataExtension {
 	public function updateCMSFields(FieldList $fields)
     {
         $gridConfig = GridFieldConfig_RecordEditor::create()
-            ->addComponent(new GridFieldCaptureAction())
-            ->addComponent(new GridFieldRefundAction())
-            ->addComponent(new GridFieldVoidAction())
+            ->addComponent(new GridFieldCaptureAction(), 'GridFieldEditButton')
+            ->addComponent(new GridFieldRefundAction(), 'GridFieldEditButton')
+            ->addComponent(new GridFieldVoidAction(), 'GridFieldEditButton')
             ->removeComponentsByType('GridFieldAddNewButton')
             ->removeComponentsByType('GridFieldDeleteAction')
             ->removeComponentsByType('GridFieldFilterHeader')
