@@ -11,8 +11,51 @@ Here's a list of all hooks available to extensions.
  - `onCaptured` called when a payment was successfully captured. You'll get the `ServiceResponse` as parameter.
  - `onAwaitingCaptured` called when a purchase completes, but is waiting for an asynchronous notification from the gateway. You'll get the `ServiceResponse` as parameter.
  - `onRefunded` called when a payment was successfully refunded. You'll get the `ServiceResponse` as parameter.
- - `onVoid` called when a payment was successfully voided. You'll get the `ServiceResponse` as parameter.
+ - `onVoid` called when a payment was successfully voided/cancelled via Omnipay. You'll get the `ServiceResponse` as parameter.
+ - `onCancelled` called then a payment was cancelled by the user (eg. user cancelled offsite payment). This is not an action that goes through Omnipay, so there's no parameter here.
  - `updateCMSFields` standard SilverStripe hook to update CMS fields.
+
+### PaymentService
+
+ - `updateServiceResponse` every service response that is being generated from the different services will be passed through this callback. You'll get the `ServiceResponse` as parameter.
+
+Since the service-responses are crucial to a proper application-flow, you should be extremely careful when modifying a response!
+The most common use-case for a modification of the service-response is probably to return a proper response to a notification coming from your payment provider.
+
+Let's say you have two (fictional) payment providers, 'EasyPayProvider' and 'CoolPayProvider'. Both return success-status via an asynchronous notification.
+
+The 'EasyPayProvider' API states, that you should return a HTTP Response with Status `200`, and a message body of `SUCCESS` when payment notification was handled successfully.
+
+The 'CoolPayProvider' API states, that you should return an HTTP Response with Status `200`, a message body of `OK` and a response header: `X-CoolPay-Success: 1`
+
+Here's how you can achieve that with an Extension:
+
+```php
+use SilverStripe\Omnipay\Service\ServiceResponse;
+
+class NotifyResponseExtension extends Extension
+{
+    public function updateServiceResponse(ServiceResponse $serviceResponse)
+    {
+        if ($serviceResponse->isNotification()) {
+            if ($serviceResponse->getPayment()->Gateway == 'EasyPayProvider') {
+                $serviceResponse->setHttpResponse(new SS_HTTPResponse('SUCCESS', 200));
+            } else if ($serviceResponse->getPayment()->Gateway == 'CoolPayProvider') {
+                $httpResponse = new SS_HTTPResponse('OK', 200);
+                $httpResponse->addHeader('X-CoolPay-Success', '1');
+                $serviceResponse->setHttpResponse($httpResponse);
+            }
+        }
+    }
+}
+```
+
+And then add the extension as usual:
+```yml
+SilverStripe\Omnipay\Service\PaymentService:
+  extensions:
+    - NotifyResponseExtension
+```
 
 ### AuthorizeService
 

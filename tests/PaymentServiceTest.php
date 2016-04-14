@@ -1,12 +1,12 @@
 <?php
 
 use SilverStripe\Omnipay\Service\ServiceFactory;
+use SilverStripe\Omnipay\Service\ServiceResponse;
+use SilverStripe\Omnipay\Service\PaymentService;
 use Omnipay\Common\Message\NotificationInterface;
 
 class PaymentServiceTest extends PaymentTest
 {
-    //TODO: Test modifications done to ServiceResponse via Extensions
-
     /** @var \SilverStripe\Omnipay\Service\PurchaseService */
     protected $service;
 
@@ -75,6 +75,63 @@ class PaymentServiceTest extends PaymentTest
             '\Omnipay\Common\Message\NotificationInterface',
             $serviceResponse->getOmnipayResponse()
         );
+        $httpResponse = $serviceResponse->redirectOrRespond();
+        $this->assertInstanceOf('SS_HTTPResponse', $httpResponse);
+        $this->assertEquals(200, $httpResponse->getStatusCode());
+        $this->assertEquals('OK', $httpResponse->getBody());
+    }
+
+    // Test notification response modified by extension
+    public function testHandleModifiedNotification()
+    {
+        PaymentService::add_extension('PaymentServiceTest_NotifyResponseExtension');
+
+        $service = $this->buildNotificationService(NotificationInterface::STATUS_COMPLETED);
+
+        $this->payment->setGateway('FantasyGateway');
+
+        $serviceResponse = $service->handleNotification();
+
+        // notification should be handled fine
+        $this->assertFalse($serviceResponse->isError());
+        // response should be flagged as notification
+        $this->assertTrue($serviceResponse->isNotification());
+        // response should have an instance of the notification attached
+        $this->assertNotNull($serviceResponse->getOmnipayResponse());
+        $this->assertInstanceOf(
+            '\Omnipay\Common\Message\NotificationInterface',
+            $serviceResponse->getOmnipayResponse()
+        );
+
+        $httpResponse = $serviceResponse->redirectOrRespond();
+        $this->assertInstanceOf('SS_HTTPResponse', $httpResponse);
+        $this->assertEquals(200, $httpResponse->getStatusCode());
+        $this->assertEquals('OK', $httpResponse->getBody());
+        $this->assertEquals('apikey12345', $httpResponse->getHeader('X-FantasyGateway-Api'));
+
+        // change to default gateway
+        $service = $this->buildNotificationService(NotificationInterface::STATUS_COMPLETED);
+
+        $serviceResponse = $service->handleNotification();
+
+        // notification should be handled fine
+        $this->assertFalse($serviceResponse->isError());
+        // response should be flagged as notification
+        $this->assertTrue($serviceResponse->isNotification());
+        // response should have an instance of the notification attached
+        $this->assertNotNull($serviceResponse->getOmnipayResponse());
+        $this->assertInstanceOf(
+            '\Omnipay\Common\Message\NotificationInterface',
+            $serviceResponse->getOmnipayResponse()
+        );
+
+        $httpResponse = $serviceResponse->redirectOrRespond();
+        $this->assertInstanceOf('SS_HTTPResponse', $httpResponse);
+        $this->assertEquals(200, $httpResponse->getStatusCode());
+        // body will be SUCCESS instead of OK
+        $this->assertEquals('SUCCESS', $httpResponse->getBody());
+
+        PaymentService::remove_extension('PaymentServiceTest_NotifyResponseExtension');
     }
 
     // Test an error notification
@@ -186,5 +243,22 @@ class PaymentServiceTest extends PaymentTest
         $service->setGatewayFactory($this->stubGatewayFactory($stubGateway));
 
         return $service;
+    }
+}
+
+class PaymentServiceTest_NotifyResponseExtension extends Extension implements TestOnly
+{
+    public function updateServiceResponse(ServiceResponse $serviceResponse)
+    {
+        if ($serviceResponse->isNotification()) {
+            if ($serviceResponse->getPayment()->Gateway == 'FantasyGateway') {
+                $httpResponse = new SS_HTTPResponse('OK', 200);
+                $httpResponse->addHeader('X-FantasyGateway-Api', 'apikey12345');
+            } else {
+                $httpResponse = new SS_HTTPResponse('SUCCESS', 200);
+            }
+
+            $serviceResponse->setHttpResponse($httpResponse);
+        }
     }
 }
