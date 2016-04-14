@@ -80,7 +80,7 @@ Each Gateway can have the following settings:
 | `use_async_notification` | *boolean* | When set to true, this Gateway will receive asynchronous notifications from the Payment provider
 | `token_key`              | *string*  | Key for the token parameter
 | `required_fields`        | *array*   | An array of required form-fields
-| `properties`             | *map*     | All gateway properties that will be passed along to the Omnipay Gateway instance
+| `parameters`             | *map*     | All gateway parameters that will be passed along to the Omnipay Gateway instance
 | `is_offsite`             | *boolean* | You can explicitly mark this Gateway as being offsite. Use with caution and only if the system fails to automatically determine this.
 
 
@@ -131,7 +131,6 @@ GatewayInfo:
     parameters:
       username: 'LIVEUSER'
       password: 'n23nl2ltwlwjle'
----
 ```
 
 The [SilverStripe documentation](http://doc.silverstripe.com/framework/en/topics/configuration#setting-configuration-via-yaml-files) explains more about yaml config files.
