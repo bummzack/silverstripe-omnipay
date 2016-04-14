@@ -7,7 +7,9 @@ Here's a list of all hooks available to extensions.
 ### Payment
 
  - `onAuthorized` called when a payment was successfully authorized. You'll get the `ServiceResponse` as parameter.
+ - `onAwaitingAuthorized` called when authorization was completed, but is waiting for an asynchronous notification from the gateway. You'll get the `ServiceResponse` as parameter.
  - `onCaptured` called when a payment was successfully captured. You'll get the `ServiceResponse` as parameter.
+ - `onAwaitingCaptured` called when a purchase completes, but is waiting for an asynchronous notification from the gateway. You'll get the `ServiceResponse` as parameter.
  - `onRefunded` called when a payment was successfully refunded. You'll get the `ServiceResponse` as parameter.
  - `onVoid` called when a payment was successfully voided. You'll get the `ServiceResponse` as parameter.
  - `updateCMSFields` standard SilverStripe hook to update CMS fields.

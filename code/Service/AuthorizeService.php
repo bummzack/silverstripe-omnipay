@@ -143,14 +143,21 @@ class AuthorizeService extends PaymentService
         }
 
         $serviceResponse = $this->wrapOmnipayResponse($response, $isNotification);
-        if($serviceResponse->isError()){
+
+        if($serviceResponse->isError()) {
             $this->createMessage('CompleteAuthorizeError', $response);
-        } else if(!$serviceResponse->isAwaitingNotification()){
+            return $serviceResponse;
+        }
+
+        if(!$serviceResponse->isAwaitingNotification()){
             $this->createMessage('AuthorizedResponse', $response);
             $this->payment->Status = 'Authorized';
             $this->payment->write();
             $this->payment->extend('onAuthorized', $serviceResponse);
+        } else {
+            $this->payment->extend('onAwaitingAuthorized', $serviceResponse);
         }
+
 
         return $serviceResponse;
     }

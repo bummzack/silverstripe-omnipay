@@ -149,12 +149,19 @@ class PurchaseService extends PaymentService
         $serviceResponse = $this->wrapOmnipayResponse($response, $isNotification);
         if($serviceResponse->isError()){
             $this->createMessage('CompletePurchaseError', $response);
-        } else if(!$serviceResponse->isAwaitingNotification()){
+            return $serviceResponse;
+        }
+
+        // only update payment status if we're not waiting for a notification
+        if(!$serviceResponse->isAwaitingNotification()){
             $this->createMessage('PurchasedResponse', $response);
             $this->payment->Status = 'Captured';
             $this->payment->write();
             $this->payment->extend('onCaptured', $serviceResponse);
+        } else {
+            $this->payment->extend('onAwaitingCaptured', $serviceResponse);
         }
+
 
         return $serviceResponse;
 	}
