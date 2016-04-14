@@ -1,5 +1,5 @@
 ---
-Name: omniroutes
+Name: omnipay-routes
 After: framework/routes#coreroutes
 ---
 Director:

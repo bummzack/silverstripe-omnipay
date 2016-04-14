@@ -1,6 +1,9 @@
 <?php
 
 use SilverStripe\Omnipay\GatewayInfo;
+use SilverStripe\Omnipay\Admin\GridField\GridFieldCaptureAction;
+use SilverStripe\Omnipay\Admin\GridField\GridFieldRefundAction;
+use SilverStripe\Omnipay\Admin\GridField\GridFieldVoidAction;
 
 /**
  * An extension for providing payments on a particular data object.
@@ -15,14 +18,17 @@ class Payable extends DataExtension {
 
 	public function updateCMSFields(FieldList $fields)
     {
-		$fields->addFieldToTab("Root.Payments",
-			GridField::create("Payments", "Payments", $this->owner->Payments(),
-				GridFieldConfig_RecordEditor::create()
-					->removeComponentsByType('GridFieldAddNewButton')
-					->removeComponentsByType('GridFieldDeleteAction')
-					->removeComponentsByType('GridFieldFilterHeader')
-					->removeComponentsByType('GridFieldPageCount')
-			)
+        $gridConfig = GridFieldConfig_RecordEditor::create()
+            ->addComponent(new GridFieldCaptureAction())
+            ->addComponent(new GridFieldRefundAction())
+            ->addComponent(new GridFieldVoidAction())
+            ->removeComponentsByType('GridFieldAddNewButton')
+            ->removeComponentsByType('GridFieldDeleteAction')
+            ->removeComponentsByType('GridFieldFilterHeader')
+            ->removeComponentsByType('GridFieldPageCount');
+
+		$fields->addFieldToTab('Root.Payments',
+			GridField::create('Payments', _t('Payment.PLURALNAME','Payments'), $this->owner->Payments(), $gridConfig)
 		);
 	}
 

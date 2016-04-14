@@ -48,11 +48,7 @@ class CaptureService extends NotificationCompleteService
             if (!empty($data['receipt'])) { // legacy code?
                 $reference = $data['receipt'];
             } else {
-                $msg = $this->payment->Messages()
-                    ->filter('ClassName', 'AuthorizedResponse')
-                    ->where('"Reference" IS NOT NULL')
-                    ->first();
-
+                $msg = $this->payment->getLatestMessageOfType('AuthorizedResponse');
                 $reference = $msg ? $msg->Reference : null;
             }
         }

@@ -42,11 +42,7 @@ class RefundService extends NotificationCompleteService
             if (!empty($data['receipt'])) { // legacy code?
                 $reference = $data['receipt'];
             } else {
-                $msg = $this->payment->Messages()
-                    ->filter('ClassName', array('CapturedResponse', 'PurchasedResponse'))
-                    ->where('"Reference" IS NOT NULL')
-                    ->first();
-
+                $msg = $this->payment->getLatestMessageOfType(array('CapturedResponse', 'PurchasedResponse'));
                 $reference = $msg ? $msg->Reference : null;
             }
         }

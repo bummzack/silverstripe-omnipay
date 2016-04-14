@@ -196,7 +196,7 @@ final class Payment extends DataObject{
             return null;
         }
         return $this->Messages()
-            ->filter("ClassName", $type)
+            ->filter('ClassName', $type)
             ->first();
     }
 

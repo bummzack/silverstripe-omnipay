@@ -28,8 +28,8 @@ class VoidService extends NotificationCompleteService
      */
     public function initiate($data = array())
     {
-        if ($this->payment->Status === 'Created') {
-            throw new InvalidStateException('Cannot cancel/void a payment that is "Created".');
+        if ($this->payment->Status !== 'Authorized') {
+            throw new InvalidStateException('Cannot cancel/void a payment that isn\'t "Authorized".');
         }
 
         if (!$this->payment->isInDB()) {
@@ -42,11 +42,7 @@ class VoidService extends NotificationCompleteService
             if (!empty($data['receipt'])) { // legacy code?
                 $reference = $data['receipt'];
             } else {
-                $msg = $this->payment->Messages()
-                    ->filter('ClassName', array('AuthorizedResponse', 'PurchasedResponse'))
-                    ->where('"Reference" IS NOT NULL')
-                    ->first();
-
+                $msg = $this->payment->getLatestMessageOfType(array('AuthorizedResponse', 'PurchasedResponse'));
                 $reference = $msg ? $msg->Reference : null;
             }
         }
