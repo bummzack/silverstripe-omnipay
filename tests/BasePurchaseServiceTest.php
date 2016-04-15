@@ -502,7 +502,7 @@ abstract class BasePurchaseServiceTest extends PaymentTest
         $this->assertEquals($payment->Status, $this->completeStatus);
     }
 
-    protected function buildPaymentGatewayStub($endpoint, callable $successFunc, $sendMustFail = false)
+    protected function buildPaymentGatewayStub($endpoint, Closure $successFunc, $sendMustFail = false)
     {
         //--------------------------------------------------------------------------------------------------------------
         // Payment request and response
