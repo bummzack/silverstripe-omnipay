@@ -1,6 +1,7 @@
 <?php
 namespace SilverStripe\Omnipay\Admin\GridField;
 use SilverStripe\Omnipay\Service\ServiceFactory;
+use SilverStripe\Omnipay\Exception\Exception;
 
 /**
  * A GridField button that can be used to void a payment
@@ -33,7 +34,7 @@ class GridFieldVoidAction extends GridFieldPaymentAction
             return null;
         }
 
-        if ($record->Status != 'Authorized') {
+        if (!$record->canVoid()) {
             return null;
         }
 
@@ -75,7 +76,13 @@ class GridFieldVoidAction extends GridFieldPaymentAction
             $factory = ServiceFactory::create();
             $voidService = $factory->getService($item, ServiceFactory::INTENT_VOID);
 
-            $serviceResponse = $voidService->initiate();
+            try {
+                $serviceResponse = $voidService->initiate();
+            } catch (Exception $ex){
+                throw new \ValidationException(
+                    _t('GridFieldVoidAction.VoidError', 'Unable to void payment. An error occurred.'), 0);
+            }
+
             if ($serviceResponse->isError()) {
                 throw new \ValidationException(
                     _t('GridFieldVoidAction.VoidError', 'Unable to void payment. An error occurred.'), 0);

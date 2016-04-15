@@ -12,6 +12,7 @@ use Omnipay\Common\GatewayFactory;
  * <code>
  * GatewayInfo:
  *  PayPal_Express:
+ *    use_authorize: true
  *    parameters:
  *      username: 'my.user.name'
  *      # more parameters…
@@ -24,7 +25,10 @@ use Omnipay\Common\GatewayFactory;
  * * `use_async_notification` *boolean*: When set to true, this Gateway will receive asynchronous notifications from the Payment provider
  * * `token_key` *string*: Key for the token parameter
  * * `required_fields` *array*: An array of required form-fields
- * * `properties` *map*: All gateway properties that will be passed along to the Omnipay Gateway instance
+ * * `parameters` *map*: All gateway parameters that will be passed along to the Omnipay Gateway instance
+ * * `allow_capture` *boolean*: Whether or not capturing of authorized payments should be allowed. Defaults to true.
+ * * `allow_refund` *boolean*: Whether or not refunding of captured payments should be allowed. Defaults to true.
+ * * `allow_void` *boolean*: Whether or not voiding of authorized payments should be allowed. Defaults to true.
  */
 class GatewayInfo
 {
@@ -173,6 +177,42 @@ class GatewayInfo
         }
 
         return self::getConfigSetting($gateway, 'use_async_notification') == true;
+    }
+
+    /**
+     * Whether or not the given gateway should allow voiding of payments
+     * @param string $gateway the gateway name
+     * @return bool
+     */
+    public static function allowVoid($gateway)
+    {
+        $setting = self::getConfigSetting($gateway, 'allow_void');
+        // if the setting isn't present, default to true, otherwise check for truthy value
+        return ($setting === null || $setting == true);
+    }
+
+    /**
+     * Whether or not the given gateway should allow capturing of payments
+     * @param string $gateway the gateway name
+     * @return bool
+     */
+    public static function allowCapture($gateway)
+    {
+        $setting = self::getConfigSetting($gateway, 'allow_capture');
+        // if the setting isn't present, default to true, otherwise check for truthy value
+        return ($setting === null || $setting == true);
+    }
+
+    /**
+     * Whether or not the given gateway should allow refunding of payments
+     * @param string $gateway the gateway name
+     * @return bool
+     */
+    public static function allowRefund($gateway)
+    {
+        $setting = self::getConfigSetting($gateway, 'allow_refund');
+        // if the setting isn't present, default to true, otherwise check for truthy value
+        return ($setting === null || $setting == true);
     }
 
     /**

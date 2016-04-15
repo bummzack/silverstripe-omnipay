@@ -70,6 +70,33 @@ abstract class BaseNotificationServiceTest extends PaymentTest
         $this->assertDOSContains($this->successFromFixtureMessages, $payment->Messages());
     }
 
+    public function testManualSuccess()
+    {
+        // Use a manual payment (this payment doesn't have any previous messages to grab transaction reference from)
+        $payment = $this->payment->setGateway('Manual');
+        $payment->Status = $this->startStatus;
+
+        $stubGateway = $this->buildPaymentGatewayStub(true, 'testThisRecipe123');
+        // register our mock gateway factory as injection
+        Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
+
+        $service = $this->getService($payment);
+
+        // Manual payments should succeed, even when there's no transaction reference given!
+        $serviceResponse = $service->initiate();
+
+        // the service should not respond with an error
+        $this->assertFalse($serviceResponse->isError());
+        // we should get a successful Omnipay response
+        $this->assertNotNull($serviceResponse->getOmnipayResponse());
+        $this->assertTrue($serviceResponse->getOmnipayResponse()->isSuccessful());
+        // check payment status
+        $this->assertEquals($payment->Status, $this->endStatus, 'Payment status should be set to ' . $this->endStatus);
+
+        // check existance of messages and existence of references
+        $this->assertDOSContains($this->successMessages, $payment->Messages());
+    }
+
     public function testSuccessWithTransactionParameter()
     {
         // set the payment status to the desired start status
@@ -310,7 +337,7 @@ abstract class BaseNotificationServiceTest extends PaymentTest
         // There should be an omnipay notification
         $this->assertNotNull($serviceResponse->getOmnipayResponse());
         $this->assertInstanceOf(
-            '\Omnipay\Common\Message\NotificationInterface', 
+            '\Omnipay\Common\Message\NotificationInterface',
             $serviceResponse->getOmnipayResponse()
         );
         // payment status should be unchanged
@@ -318,7 +345,7 @@ abstract class BaseNotificationServiceTest extends PaymentTest
     }
 
     /**
-     * @expectedException  \SilverStripe\Omnipay\Exception\InvalidStateException
+     * @expectedException \SilverStripe\Omnipay\Exception\InvalidConfigurationException
      */
     public function testInvalidStatus()
     {
@@ -332,7 +359,7 @@ abstract class BaseNotificationServiceTest extends PaymentTest
     }
 
     /**
-     * @expectedException  \SilverStripe\Omnipay\Exception\InvalidStateException
+     * @expectedException \SilverStripe\Omnipay\Exception\InvalidStateException
      */
     public function testInvalidCompleteStatus()
     {
@@ -346,7 +373,7 @@ abstract class BaseNotificationServiceTest extends PaymentTest
     }
 
     /**
-     * @expectedException  \SilverStripe\Omnipay\Exception\MissingParameterException
+     * @expectedException \SilverStripe\Omnipay\Exception\MissingParameterException
      */
     public function testMissingTransactionReference()
     {
@@ -354,6 +381,25 @@ abstract class BaseNotificationServiceTest extends PaymentTest
 
         // create a service with a payment that has the correct status
         // but doesn't have any transaction references in messages
+        $service = $this->getService($this->payment);
+
+        // this should throw an exception
+        $service->initiate();
+    }
+
+    /**
+     * @expectedException \SilverStripe\Omnipay\Exception\InvalidConfigurationException
+     */
+    public function testMethodDisabled()
+    {
+        // disallow the service via config
+        $method = 'allow_' . $this->gatewayMethod;
+        Config::inst()->update('GatewayInfo', 'Dummy', array(
+            $method => false
+        ));
+        $this->payment->setGateway('Dummy')->Status = 'Created';
+
+        // create a service with a payment that is created
         $service = $this->getService($this->payment);
 
         // this should throw an exception

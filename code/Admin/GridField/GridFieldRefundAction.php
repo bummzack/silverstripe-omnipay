@@ -1,10 +1,11 @@
 <?php
 namespace SilverStripe\Omnipay\Admin\GridField;
 use SilverStripe\Omnipay\Service\ServiceFactory;
+use SilverStripe\Omnipay\Exception\Exception;
 
 /**
  * A GridField button that can be used to refund a payment
- * 
+ *
  * @package SilverStripe\Omnipay\Admin\GridField
  */
 class GridFieldRefundAction extends GridFieldPaymentAction
@@ -33,7 +34,7 @@ class GridFieldRefundAction extends GridFieldPaymentAction
             return null;
         }
 
-        if ($record->Status != 'Captured') {
+        if (!$record->canRefund()) {
             return null;
         }
 
@@ -75,7 +76,13 @@ class GridFieldRefundAction extends GridFieldPaymentAction
             $factory = ServiceFactory::create();
             $refundService = $factory->getService($item, ServiceFactory::INTENT_REFUND);
 
-            $serviceResponse = $refundService->initiate();
+            try {
+                $serviceResponse = $refundService->initiate();
+            } catch (Exception $ex){
+                throw new \ValidationException(
+                    _t('GridFieldRefundAction.RefundError', 'Unable to refund payment. An error occurred.'), 0);
+            }
+
             if ($serviceResponse->isError()) {
                 throw new \ValidationException(
                     _t('GridFieldRefundAction.RefundError', 'Unable to refund payment. An error occurred.'), 0);

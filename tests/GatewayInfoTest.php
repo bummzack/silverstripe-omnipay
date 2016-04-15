@@ -44,7 +44,10 @@ class GatewayInfoTest extends SapphireTest
             'required_fields' => array(
                 'name', 'number'
             ),
-            'is_offsite' => true
+            'is_offsite' => true,
+            'allow_capture' => true,
+            'allow_refund' => false,
+            'allow_void' => false
         ));
     }
 
@@ -143,6 +146,23 @@ class GatewayInfoTest extends SapphireTest
         // check a gateway that was configured to be offsite (purely based on config)
 		$this->assertTrue(GatewayInfo::isOffsite('OffsiteGateway'));
 	}
+
+    /**
+     * Test if the gateway is manual
+     */
+    public function testIsManual()
+    {
+        Config::inst()->update('GatewayInfo', 'Dummy', array(
+            'is_manual' => true
+        ));
+
+        // should be manual, as it's explicitly configured
+        $this->assertTrue(GatewayInfo::isManual('Dummy'));
+        // should be manual, as it's actually a manual gateway
+        $this->assertTrue(GatewayInfo::isManual('Manual'));
+        // should not be manual
+        $this->assertFalse(GatewayInfo::isManual('PaymentExpress_PxPay'));
+    }
 
     /**
      * Test the use_authorize config
@@ -268,6 +288,30 @@ class GatewayInfoTest extends SapphireTest
             GatewayInfo::requiredFields('Dummy'),
             'Required fields should always return at least an array'
         );
+    }
+
+    public function testAllowedMethods()
+    {
+        // a gateway without explicitly disabling void, capture and refund should allow per default
+        $this->assertTrue(GatewayInfo::allowCapture('Dummy'));
+        $this->assertTrue(GatewayInfo::allowRefund('Dummy'));
+        $this->assertTrue(GatewayInfo::allowVoid('Dummy'));
+
+        // check if the config is respected
+        $this->assertTrue(GatewayInfo::allowCapture('PaymentExpress_PxPay'));
+        $this->assertFalse(GatewayInfo::allowRefund('PaymentExpress_PxPay'));
+        $this->assertFalse(GatewayInfo::allowVoid('PaymentExpress_PxPay'));
+
+        // check with "truthy" and "falsy" values
+        Config::inst()->update('GatewayInfo', 'PaymentExpress_PxPay', array(
+            'allow_capture' => '0',
+            'allow_refund' => '1',
+            'allow_void' => '1'
+        ));
+
+        $this->assertFalse(GatewayInfo::allowCapture('PaymentExpress_PxPay'));
+        $this->assertTrue(GatewayInfo::allowRefund('PaymentExpress_PxPay'));
+        $this->assertTrue(GatewayInfo::allowVoid('PaymentExpress_PxPay'));
     }
 
 }

@@ -2,10 +2,10 @@
 
 namespace SilverStripe\Omnipay\Service;
 
-use SilverStripe\Omnipay\Exception\InvalidStateException;
 use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
 use SilverStripe\Omnipay\Exception\MissingParameterException;
 use Omnipay\Common\Exception\OmnipayException;
+use SilverStripe\Omnipay\GatewayInfo;
 
 class VoidService extends NotificationCompleteService
 {
@@ -28,27 +28,32 @@ class VoidService extends NotificationCompleteService
      */
     public function initiate($data = array())
     {
-        if ($this->payment->Status !== 'Authorized') {
-            throw new InvalidStateException('Cannot cancel/void a payment that isn\'t "Authorized".');
+        if (!$this->payment->canVoid()) {
+            throw new InvalidConfigurationException('Voiding of this payment not allowed.');
         }
 
         if (!$this->payment->isInDB()) {
             $this->payment->write();
         }
 
-        if (!empty($data['transactionReference'])) {
-            $reference = $data['transactionReference'];
-        } else {
-            if (!empty($data['receipt'])) { // legacy code?
-                $reference = $data['receipt'];
-            } else {
-                $msg = $this->payment->getLatestMessageOfType(array('AuthorizedResponse', 'PurchasedResponse'));
-                $reference = $msg ? $msg->Reference : null;
-            }
-        }
+        $reference = null;
 
-        if (empty($reference)) {
-            throw new MissingParameterException('transactionReference not found and is not set as parameter');
+        // If the gateway isn't manual, we need a transaction reference to void a payment
+        if (!GatewayInfo::isManual($this->payment->Gateway)) {
+            if (!empty($data['transactionReference'])) {
+                $reference = $data['transactionReference'];
+            } else {
+                if (!empty($data['receipt'])) { // legacy code?
+                    $reference = $data['receipt'];
+                } else {
+                    $msg = $this->payment->getLatestMessageOfType(array('AuthorizedResponse', 'PurchasedResponse'));
+                    $reference = $msg ? $msg->Reference : null;
+                }
+            }
+
+            if (empty($reference)) {
+                throw new MissingParameterException('transactionReference not found and is not set as parameter');
+            }
         }
 
         $gateway = $this->oGateway();

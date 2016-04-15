@@ -82,7 +82,9 @@ Each Gateway can have the following settings:
 | `required_fields`        | *array*   | An array of required form-fields
 | `parameters`             | *map*     | All gateway parameters that will be passed along to the Omnipay Gateway instance
 | `is_offsite`             | *boolean* | You can explicitly mark this Gateway as being offsite. Use with caution and only if the system fails to automatically determine this.
-
+| `allow_capture`          | *boolean* | Whether or not capturing of authorized payments should be allowed. Defaults to true. Some payment providers capture payment automatically after some period of time, or the person using the CMS should not be allowed to capture payments. You can then disable this feature.
+| `allow_refund`           | *boolean* | Whether or not refunding of captured payments should be allowed. Defaults to true.
+| `allow_void`             | *boolean* | Whether or not voiding of authorized payments should be allowed. Defaults to true.
 
 ```yaml
 ---
