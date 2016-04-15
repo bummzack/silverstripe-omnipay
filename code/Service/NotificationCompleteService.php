@@ -62,10 +62,7 @@ abstract class NotificationCompleteService extends PaymentService
         }
 
         // Find the matching request message
-        $msg = $this->payment->Messages()
-            ->filter('ClassName', $this->requestMessageType)
-            ->where('"Reference" IS NOT NULL')
-            ->first();
+        $msg = $this->payment->getLatestMessageOfType($this->requestMessageType);
 
         // safety check the payment number against the transaction reference we get from the notification
         if (!(
