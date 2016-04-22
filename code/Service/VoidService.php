@@ -42,13 +42,10 @@ class VoidService extends NotificationCompleteService
         if (!GatewayInfo::isManual($this->payment->Gateway)) {
             if (!empty($data['transactionReference'])) {
                 $reference = $data['transactionReference'];
+            } elseif (!empty($data['receipt'])) { // legacy code?
+                $reference = $data['receipt'];
             } else {
-                if (!empty($data['receipt'])) { // legacy code?
-                    $reference = $data['receipt'];
-                } else {
-                    $msg = $this->payment->getLatestMessageOfType(array('AuthorizedResponse', 'PurchasedResponse'));
-                    $reference = $msg ? $msg->Reference : null;
-                }
+                $reference = $this->payment->TransactionReference;
             }
 
             if (empty($reference)) {
@@ -107,6 +104,7 @@ class VoidService extends NotificationCompleteService
     {
         $this->createMessage('VoidedResponse', $gatewayMessage);
         $this->payment->Status = $this->endState;
+        $this->payment->TransactionReference = $gatewayMessage->getTransactionReference();
         $this->payment->write();
         $this->payment->extend('onVoid', $serviceResponse);
     }

@@ -45,16 +45,6 @@ abstract class PaymentService extends \Object
     protected $payment;
 
     /**
-     * @var String
-     */
-    protected $returnUrl;
-
-    /**
-     * @var String
-     */
-    protected $cancelUrl;
-
-    /**
      * @var AbstractResponse
      */
     protected $response;
@@ -71,50 +61,6 @@ abstract class PaymentService extends \Object
     {
         parent::__construct();
         $this->payment = $payment;
-    }
-
-    /**
-     * Get the url to return to, that has been previously stored.
-     * This is not a database field.
-     * @return string the url
-     */
-    public function getReturnUrl()
-    {
-        return $this->returnUrl;
-    }
-
-    /**
-     * Set the url to redirect to after payment is made/attempted.
-     * This function also populates the cancel url, if it is empty.
-     * @return $this this object for chaining
-     */
-    public function setReturnUrl($url)
-    {
-        $this->returnUrl = $url;
-        if (!$this->cancelUrl) {
-            $this->cancelUrl = $url;
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return string cancel url
-     */
-    public function getCancelUrl()
-    {
-        return $this->cancelUrl;
-    }
-
-    /**
-     * Set the url to redirect to after payment is cancelled
-     * @return $this this object for chaining
-     */
-    public function setCancelUrl($url)
-    {
-        $this->cancelUrl = $url;
-
-        return $this;
     }
 
     /**
@@ -343,8 +289,8 @@ abstract class PaymentService extends \Object
         if (!$response->isNotification() && !$response->isRedirect()) {
             $response->setTargetUrl(
                 ($response->isError() || $response->isCancelled())
-                    ? $this->getCancelUrl()
-                    : $this->getReturnUrl()
+                    ? $this->payment->FailureURL
+                    : $this->payment->SuccessURL
             );
         }
 

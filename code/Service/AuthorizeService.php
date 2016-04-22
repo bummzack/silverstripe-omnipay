@@ -8,34 +8,6 @@ use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
 class AuthorizeService extends PaymentService
 {
     /**
-     * If the return URL wasn't explicitly set, get it from the last AuthorizeRequest message
-     * @return string
-     */
-    public function getReturnUrl()
-    {
-        $value = parent::getReturnUrl();
-        if (!$value && $this->payment->isInDB()) {
-            $msg = $this->payment->getLatestMessageOfType('AuthorizeRequest');
-            $value = $msg ? $msg->SuccessURL : \Director::baseURL();
-        }
-        return $value;
-    }
-
-    /**
-     * If the cancel URL wasn't explicitly set, get it from the last AuthorizeRequest message
-     * @return string
-     */
-    public function getCancelUrl()
-    {
-        $value = parent::getCancelUrl();
-        if (!$value && $this->payment->isInDB()) {
-            $msg = $this->payment->getLatestMessageOfType('AuthorizeRequest');
-            $value = $msg ? $msg->FailureURL : \Director::baseURL();
-        }
-        return $value;
-    }
-
-    /**
      * Start an authorization request
      *
      * @inheritdoc
@@ -63,10 +35,7 @@ class AuthorizeService extends PaymentService
         $request = $this->oGateway()->authorize($gatewayData);
         $this->extend('onAfterAuthorize', $request);
 
-        $message = $this->createMessage('AuthorizeRequest', $request);
-        $message->SuccessURL = $this->returnUrl;
-        $message->FailureURL = $this->cancelUrl;
-        $message->write();
+        $this->createMessage('AuthorizeRequest', $request);
 
         try {
             $response = $this->response = $request->send();
@@ -93,6 +62,7 @@ class AuthorizeService extends PaymentService
         } else {
             $this->createMessage('AuthorizedResponse', $response);
             $this->payment->Status = 'Authorized';
+            $this->payment->TransactionReference = $response->getTransactionReference();
             $this->payment->write();
             $this->payment->extend('onAuthorized', $serviceResponse);
         }
@@ -151,6 +121,7 @@ class AuthorizeService extends PaymentService
         if (!$serviceResponse->isAwaitingNotification()) {
             $this->createMessage('AuthorizedResponse', $response);
             $this->payment->Status = 'Authorized';
+            $this->payment->TransactionReference = $response->getTransactionReference();
             $this->payment->write();
             $this->payment->extend('onAuthorized', $serviceResponse);
         } else {

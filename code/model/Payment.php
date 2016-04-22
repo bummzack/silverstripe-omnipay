@@ -12,12 +12,21 @@ use SilverStripe\Omnipay\GatewayInfo;
  */
 final class Payment extends DataObject
 {
-
     private static $db = array(
-        'Gateway' => 'Varchar(128)', //this is the omnipay 'short name'
-        'Money' => 'Money', //contains Amount and Currency
+        // this is the omnipay 'short name'
+        'Gateway' => 'Varchar(128)',
+        //contains Amount and Currency
+        'Money' => 'Money',
+        // status
         'Status' => "Enum('Created,PendingAuthorization,Authorized,PendingPurchase,PendingCapture,Captured,PendingRefund,Refunded,PendingVoid,Void','Created')",
-        'Identifier' => 'Varchar(64)'
+        // unique identifier for this payment
+        'Identifier' => 'Varchar(64)',
+        // How this payment is being referenced by the payment provider
+        'TransactionReference' => 'Varchar(255)',
+        // Success URL
+        'SuccessURL' => 'Text',
+        // Failure URL
+        'FailureURL' => 'Text'
     );
 
     private static $has_many = array(
@@ -107,6 +116,50 @@ final class Payment extends DataObject
         $this->setCurrency($currency);
         return $this;
     }
+
+    /**
+     * Get the url to return to, that has been previously stored.
+     * @return string the url
+     */
+    public function getReturnUrl()
+    {
+        return $this->SuccessURL;
+    }
+
+    /**
+     * Set the url to redirect to after payment is made/attempted.
+     * This function also populates the cancel url, if it is empty.
+     * @return $this this object for chaining
+     */
+    public function setReturnUrl($url)
+    {
+        $this->SuccessURL = $url;
+        if (!$this->FailureURL) {
+            $this->FailureURL = $url;
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return string cancel url
+     */
+    public function getCancelUrl()
+    {
+        return $this->FailureURL;
+    }
+
+    /**
+     * Set the url to redirect to after payment is cancelled
+     * @return $this this object for chaining
+     */
+    public function setCancelUrl($url)
+    {
+        $this->FailureURL = $url;
+
+        return $this;
+    }
+
 
     /**
      * Locale aware title for a payment.

@@ -48,13 +48,10 @@ class CaptureService extends NotificationCompleteService
         if (!GatewayInfo::isManual($this->payment->Gateway)) {
             if (!empty($data['transactionReference'])) {
                 $reference = $data['transactionReference'];
+            } elseif (!empty($data['receipt'])) { // legacy code?
+                $reference = $data['receipt'];
             } else {
-                if (!empty($data['receipt'])) { // legacy code?
-                    $reference = $data['receipt'];
-                } else {
-                    $msg = $this->payment->getLatestMessageOfType('AuthorizedResponse');
-                    $reference = $msg ? $msg->Reference : null;
-                }
+                $reference = $this->payment->TransactionReference;
             }
 
             if (empty($reference)) {
@@ -115,6 +112,7 @@ class CaptureService extends NotificationCompleteService
     {
         $this->createMessage('CapturedResponse', $gatewayMessage);
         $this->payment->Status = $this->endState;
+        $this->payment->TransactionReference = $gatewayMessage->getTransactionReference();
         $this->payment->write();
         $this->payment->extend('onCaptured', $serviceResponse);
     }
