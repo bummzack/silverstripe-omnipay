@@ -60,11 +60,7 @@ class AuthorizeService extends PaymentService
         } elseif ($serviceResponse->isError()) {
             $this->createMessage('AuthorizeError', $response);
         } else {
-            $this->createMessage('AuthorizedResponse', $response);
-            $this->payment->Status = 'Authorized';
-            $this->payment->TransactionReference = $response->getTransactionReference();
-            $this->payment->write();
-            $this->payment->extend('onAuthorized', $serviceResponse);
+            $this->markCompleted('Authorized', $serviceResponse, $response);
         }
 
         return $serviceResponse;
@@ -119,16 +115,18 @@ class AuthorizeService extends PaymentService
         }
 
         if (!$serviceResponse->isAwaitingNotification()) {
-            $this->createMessage('AuthorizedResponse', $response);
-            $this->payment->Status = 'Authorized';
-            $this->payment->TransactionReference = $response->getTransactionReference();
-            $this->payment->write();
-            $this->payment->extend('onAuthorized', $serviceResponse);
+            $this->markCompleted('Authorized', $serviceResponse, $response);
         } else {
             $this->payment->extend('onAwaitingAuthorized', $serviceResponse);
         }
 
-
         return $serviceResponse;
+    }
+
+    protected function markCompleted($endStatus, ServiceResponse $serviceResponse, $gatewayMessage)
+    {
+        parent::markCompleted($endStatus, $serviceResponse, $gatewayMessage);
+        $this->createMessage('AuthorizedResponse', $gatewayMessage);
+        $this->payment->extend('onAuthorized', $serviceResponse);
     }
 }

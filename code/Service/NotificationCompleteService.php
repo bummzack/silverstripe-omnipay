@@ -72,22 +72,9 @@ abstract class NotificationCompleteService extends PaymentService
 
         // check if we're done
         if (!$serviceResponse->isError() && !$serviceResponse->isAwaitingNotification()) {
-            $this->markCompleted($serviceResponse, $serviceResponse->getOmnipayResponse());
+            $this->markCompleted($this->endState, $serviceResponse, $serviceResponse->getOmnipayResponse());
         }
 
         return $serviceResponse;
     }
-
-    /**
-     * Mark this payment process as completed.
-     * Here you'll usually do the following:
-     * * Set the proper status on Payment and write the payment.
-     * * Log/Write the GatewayMessage
-     * * Call a "complete" hook
-     *
-     * @param ServiceResponse $serviceResponse the service response
-     * @param mixed $gatewayMessage the message from Omnipay
-     * @return void
-     */
-    abstract protected function markCompleted(ServiceResponse $serviceResponse, $gatewayMessage);
 }

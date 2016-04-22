@@ -181,6 +181,10 @@ abstract class BasePurchaseServiceTest extends PaymentTest
         $this->assertTrue($response->getOmnipayResponse()->isSuccessful());
         $this->assertSame($this->completeStatus, $payment->Status);
         $this->assertFalse($response->isError());
+        // payment should get the transaction reference from Omnipay assigned
+        $reference = $response->getOmnipayResponse()->getTransactionReference();
+        $this->assertNotNull($reference);
+        $this->assertEquals($payment->TransactionReference, $reference);
 
         //check messaging
         $this->assertDOSContains($this->offsiteSuccessMessages, $payment->Messages());

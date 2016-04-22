@@ -66,11 +66,7 @@ class PurchaseService extends PaymentService
         } elseif ($serviceResponse->isError()) {
             $this->createMessage('PurchaseError', $response);
         } else {
-            $this->createMessage('PurchasedResponse', $response);
-            $this->payment->Status = 'Captured';
-            $this->payment->TransactionReference = $response->getTransactionReference();
-            $this->payment->write();
-            $this->payment->extend('onCaptured', $serviceResponse);
+            $this->markCompleted('Captured', $serviceResponse, $response);
         }
 
         return $serviceResponse;
@@ -124,17 +120,20 @@ class PurchaseService extends PaymentService
 
         // only update payment status if we're not waiting for a notification
         if (!$serviceResponse->isAwaitingNotification()) {
-            $this->createMessage('PurchasedResponse', $response);
-            $this->payment->Status = 'Captured';
-            $this->payment->TransactionReference = $response->getTransactionReference();
-            $this->payment->write();
-            $this->payment->extend('onCaptured', $serviceResponse);
+            $this->markCompleted('Captured', $serviceResponse, $response);
         } else {
             $this->payment->extend('onAwaitingCaptured', $serviceResponse);
         }
 
 
         return $serviceResponse;
+    }
+
+    protected function markCompleted($endStatus, ServiceResponse $serviceResponse, $gatewayMessage)
+    {
+        parent::markCompleted($endStatus, $serviceResponse, $gatewayMessage);
+        $this->createMessage('PurchasedResponse', $gatewayMessage);
+        $this->payment->extend('onCaptured', $serviceResponse);
     }
 
     /**

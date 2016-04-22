@@ -270,6 +270,30 @@ abstract class PaymentService extends \Object
     }
 
     /**
+     * Mark this payment process as completed.
+     * This sets the desired end-status on the payment, sets the transaction reference and writes the payment.
+     *
+     * In subclasses, you'll want to override this and:
+     * * Log/Write the GatewayMessage
+     * * Call a "complete" hook
+     *
+     * Don't forget to call the parent method from your subclass!
+     *
+     * @param string $endStatus the end state to set on the payment
+     * @param ServiceResponse $serviceResponse the service response
+     * @param mixed $gatewayMessage the message from Omnipay
+     * @return void
+     */
+    protected function markCompleted($endStatus, ServiceResponse $serviceResponse, $gatewayMessage)
+    {
+        $this->payment->Status = $endStatus;
+        if ($gatewayMessage && ($reference = $gatewayMessage->getTransactionReference())) {
+            $this->payment->TransactionReference = $reference;
+        }
+        $this->payment->write();
+    }
+
+    /**
      * Generate a service response
      * @param int $flags a combination of service flags
      * @param AbstractResponse|NotificationInterface|null $omnipayData the response or notification from the Omnipay gateway

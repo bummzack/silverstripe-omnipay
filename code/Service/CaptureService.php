@@ -101,19 +101,17 @@ class CaptureService extends NotificationCompleteService
             if ($serviceResponse->isError()) {
                 $this->createMessage($this->errorMessageType, $response);
             } else {
-                $this->markCompleted($serviceResponse, $response);
+                $this->markCompleted($this->endState, $serviceResponse, $response);
             }
         }
 
         return $serviceResponse;
     }
 
-    protected function markCompleted(ServiceResponse $serviceResponse, $gatewayMessage)
+    protected function markCompleted($endStatus, ServiceResponse $serviceResponse, $gatewayMessage)
     {
+        parent::markCompleted($endStatus, $serviceResponse, $gatewayMessage);
         $this->createMessage('CapturedResponse', $gatewayMessage);
-        $this->payment->Status = $this->endState;
-        $this->payment->TransactionReference = $gatewayMessage->getTransactionReference();
-        $this->payment->write();
         $this->payment->extend('onCaptured', $serviceResponse);
     }
 }
