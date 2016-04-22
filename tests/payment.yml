@@ -12,8 +12,8 @@ Payment:
     MoneyCurrency: USD
     Status: PendingPurchase
     Identifier: UNIQUEHASH23q5123tqasdf
-    SuccessURL: 'shop/complete'
-    FailureURL: 'shop/incomplete'
+    SuccessUrl: 'shop/complete'
+    FailureUrl: 'shop/incomplete'
   payment3:
     Gateway: PaymentExpress_PxPay
     MoneyAmount: 769.50
@@ -32,8 +32,8 @@ Payment:
     MoneyCurrency: USD
     Status: PendingAuthorization
     Identifier: 62b26e0a8a77f60cce3e9a7994087b0e
-    SuccessURL: 'shop/complete'
-    FailureURL: 'shop/incomplete'
+    SuccessUrl: 'shop/complete'
+    FailureUrl: 'shop/incomplete'
   payment6:
     Gateway: PaymentExpress_PxPay
     MoneyAmount: 123.45

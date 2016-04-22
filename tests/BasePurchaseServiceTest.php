@@ -233,7 +233,7 @@ abstract class BasePurchaseServiceTest extends PaymentTest
         //exception when trying to run functions that require a gateway
         $payment = $this->payment;
         $service = $this->getService(
-            $payment->init("FantasyGateway", 100, "NZD")->setReturnUrl("complete")
+            $payment->init("FantasyGateway", 100, "NZD")->setSuccessUrl("complete")
         );
 
         // Will throw an exception since the gateway doesn't exist
@@ -401,7 +401,7 @@ abstract class BasePurchaseServiceTest extends PaymentTest
             return $isNotification;
         });
         $payment = $this->payment->setGateway('PaymentExpress_PxPay');
-        $payment->setCancelUrl('my/cancel/url')->setReturnUrl('my/return/url');
+        $payment->setFailureUrl('my/cancel/url')->setSuccessUrl('my/return/url');
 
         $service = $this->getService($payment);
         $service->setGatewayFactory($this->stubGatewayFactory($stubGateway));
@@ -457,7 +457,7 @@ abstract class BasePurchaseServiceTest extends PaymentTest
             return $isNotification;
         });
         $payment = $this->payment->setGateway('PaymentExpress_PxPay');
-        $payment->setCancelUrl('my/cancel/url')->setReturnUrl('my/return/url');
+        $payment->setFailureUrl('my/cancel/url')->setSuccessUrl('my/return/url');
 
         $service = $this->getService($payment);
         $service->setGatewayFactory($this->stubGatewayFactory($stubGateway));
@@ -512,7 +512,7 @@ abstract class BasePurchaseServiceTest extends PaymentTest
             return $isNotification;
         });
         $payment = $this->payment->setGateway('PaymentExpress_PxPay');
-        $payment->setCancelUrl('my/cancel/url')->setReturnUrl('my/return/url');
+        $payment->setFailureUrl('my/cancel/url')->setSuccessUrl('my/return/url');
         $service = $this->getService($payment);
 
         // register our mock gateway factory as injection

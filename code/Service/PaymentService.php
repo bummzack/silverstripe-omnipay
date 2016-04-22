@@ -289,8 +289,8 @@ abstract class PaymentService extends \Object
         if (!$response->isNotification() && !$response->isRedirect()) {
             $response->setTargetUrl(
                 ($response->isError() || $response->isCancelled())
-                    ? $this->payment->FailureURL
-                    : $this->payment->SuccessURL
+                    ? $this->payment->FailureUrl
+                    : $this->payment->SuccessUrl
             );
         }
 
@@ -449,9 +449,56 @@ abstract class PaymentService extends \Object
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Deprecated methods.
+    // Deprecated methods
     // TODO: Remove with 3.0
     // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Get the url to return to, that has been previously stored.
+     * This is not a database field.
+     * @return string the url
+     * @deprecated 3.0 get the SuccessUrl directly from payments
+     */
+    public function getReturnUrl()
+    {
+        return $this->payment->SuccessUrl;
+    }
+
+    /**
+     * Set the url to redirect to after payment is made/attempted.
+     * This function also populates the cancel url, if it is empty.
+     * @return $this this object for chaining
+     * @deprecated 3.0 set the SuccessUrl directly on payments
+     * @codeCoverageIgnore
+     */
+    public function setReturnUrl($url)
+    {
+        $this->payment->SuccessUrl = $url;
+        return $this;
+    }
+
+    /**
+     * @return string cancel url
+     * @deprecated 3.0 get the FailureUrl directly from payments
+     * @codeCoverageIgnore
+     */
+    public function getCancelUrl()
+    {
+        return $this->payment->FailureUrl;
+    }
+
+    /**
+     * Set the url to redirect to after payment is cancelled
+     * @return $this this object for chaining
+     * @deprecated 3.0 set the FailureUrl directly on payments
+     * @codeCoverageIgnore
+     */
+    public function setCancelUrl($url)
+    {
+        $this->payment->FailureUrl = $url;
+        return $this;
+    }
+
 
     /**
      * Set the guzzle client (for testing)
