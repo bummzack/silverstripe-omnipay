@@ -29,6 +29,11 @@ final class Payment extends DataObject
         'FailureUrl' => 'Text'
     );
 
+    private static $has_one = array(
+        // partial payments will reference the initial payments with this relation
+        'InitialPayment' => 'Payment'
+    );
+
     private static $has_many = array(
         'Messages' => 'PaymentMessage'
     );
@@ -261,6 +266,29 @@ final class Payment extends DataObject
         return $this->Messages()
             ->filter('ClassName', $type)
             ->first();
+    }
+
+    /**
+     * Get partial payments that have this payment as initial payment
+     * @return DataList|null
+     */
+    public function getPartialPayments()
+    {
+        if (!$this->isInDB()) {
+            return null;
+        }
+
+        return Payment::get()
+            ->filter('InitialPaymentID', $this->ID);
+    }
+
+    /**
+     * Whether or not this payment is a partial payment of another payment
+     * @return bool
+     */
+    public function isPartial()
+    {
+        return !empty($this->InitialPaymentID);
     }
 
     /**

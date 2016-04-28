@@ -6,6 +6,7 @@ use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
 use SilverStripe\Omnipay\Exception\MissingParameterException;
 use Omnipay\Common\Exception\OmnipayException;
 use SilverStripe\Omnipay\GatewayInfo;
+use SilverStripe\Omnipay\PaymentMath;
 
 class RefundService extends NotificationCompleteService
 {
@@ -60,10 +61,18 @@ class RefundService extends NotificationCompleteService
             );
         }
 
+        $total = $amount = (float)$this->payment->MoneyAmount;
+        // If there's a custom amount, ensure it doesn't exceed the payment amount
+        if (!empty($data['amount']) && is_numeric($data['amount'])) {
+            $amount = min($data['amount'], $total);
+        }
+
+        $isPartial = $amount < $total;
+
         $gatewayData = array_merge(
             $data,
             array(
-                'amount' => (float)$this->payment->MoneyAmount,
+                'amount' => $amount,
                 'currency' => $this->payment->MoneyCurrency,
                 'transactionReference' => $reference,
                 'notifyUrl' => $this->getEndpointUrl('notify')
@@ -89,12 +98,18 @@ class RefundService extends NotificationCompleteService
         $serviceResponse = $this->wrapOmnipayResponse($response);
 
         if ($serviceResponse->isAwaitingNotification()) {
+            if($isPartial){
+                $this->createPartialPayment($amount, $this->pendingState);
+            }
             $this->payment->Status = $this->pendingState;
             $this->payment->write();
         } else {
             if ($serviceResponse->isError()) {
                 $this->createMessage($this->errorMessageType, $response);
             } else {
+                if($isPartial){
+                    $this->createPartialPayment($amount, $this->pendingState);
+                }
                 $this->markCompleted($this->endState, $serviceResponse, $response);
             }
         }
@@ -104,8 +119,33 @@ class RefundService extends NotificationCompleteService
 
     protected function markCompleted($endStatus, ServiceResponse $serviceResponse, $gatewayMessage)
     {
+        $partials = $this->payment->getPartialPayments()->filter('Status', 'PendingRefund');
+
+        if ($partials->count() > 0) {
+            $total = $runningTotal = $this->payment->MoneyAmount;
+            foreach ($partials as $payment) {
+                $runningTotal = PaymentMath::Subtract($runningTotal, $payment->MoneyAmount);
+                $payment->Status = 'Refunded';
+                $payment->write();
+            }
+
+            // Ugly hack to set the money amount
+            $this->payment->Status = 'Created';
+            $this->payment->setAmount($runningTotal);
+
+            // If not everything was refunded, the payment should still have the "Captured" status
+            if((float)$runningTotal > 0){
+                $endStatus = 'Captured';
+            }
+        }
+
         parent::markCompleted($endStatus, $serviceResponse, $gatewayMessage);
-        $this->createMessage('RefundedResponse', $gatewayMessage);
+        if ($endStatus === 'Captured') {
+            $this->createMessage('PartiallyRefundedResponse', $gatewayMessage);
+        } else {
+            $this->createMessage('RefundedResponse', $gatewayMessage);
+        }
+
         $this->payment->extend('onRefunded', $serviceResponse);
     }
 }

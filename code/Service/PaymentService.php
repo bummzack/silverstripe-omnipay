@@ -294,6 +294,39 @@ abstract class PaymentService extends \Object
     }
 
     /**
+     * Create a partial payment that will be based on the current payment.
+     * This new payment will inherit the Gateway, TransactionReference, SuccessUrl and FailureUrl
+     * of the initial payment.
+     * @param float $amount the amount that the partial payment should have
+     * @param string $status the desired payment status
+     * @param boolean $write whether or not to directly write the new Payment to DB (optional)
+     * @return \Payment the newly created payment (already written to the DB)
+     */
+    protected function createPartialPayment($amount, $status, $write = true)
+    {
+        /** @var \Payment $payment */
+        $payment = \Payment::create(array(
+            'Gateway' => $this->payment->Gateway,
+            'TransactionReference' => $this->payment->TransactionReference,
+            'SuccessUrl' => $this->payment->SuccessUrl,
+            'FailureUrl' => $this->payment->FailureUrl,
+            'InitialPaymentID' => $this->payment->ID
+        ));
+
+        $payment->setCurrency($this->payment->getCurrency());
+        $payment->setAmount($amount);
+
+        // allow extensions to update/modify the partial payment
+        $this->extend('updatePartialPayment', $payment);
+
+        if ($write) {
+            $payment->write();
+        }
+
+        return $payment;
+    }
+
+    /**
      * Generate a service response
      * @param int $flags a combination of service flags
      * @param AbstractResponse|NotificationInterface|null $omnipayData the response or notification from the Omnipay gateway
