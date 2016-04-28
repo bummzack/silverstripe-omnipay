@@ -6,6 +6,7 @@ use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
 use SilverStripe\Omnipay\Exception\MissingParameterException;
 use Omnipay\Common\Exception\OmnipayException;
 use SilverStripe\Omnipay\GatewayInfo;
+use SilverStripe\Omnipay\Helper;
 
 /**
  * Service used in tandem with AuthorizeService.
@@ -90,7 +91,7 @@ class CaptureService extends NotificationCompleteService
             return $this->generateServiceResponse(ServiceResponse::SERVICE_ERROR);
         }
 
-        $this->extend('onAfterSendCapture', $request, $response);
+        Helper::safeExtend($this, 'onAfterSendCapture', $request, $response);
 
         $serviceResponse = $this->wrapOmnipayResponse($response);
 
@@ -112,6 +113,6 @@ class CaptureService extends NotificationCompleteService
     {
         parent::markCompleted($endStatus, $serviceResponse, $gatewayMessage);
         $this->createMessage('CapturedResponse', $gatewayMessage);
-        $this->payment->extend('onCaptured', $serviceResponse);
+        Helper::safeExtend($this->payment, 'onCaptured', $serviceResponse);
     }
 }

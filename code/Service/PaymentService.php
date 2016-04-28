@@ -4,6 +4,7 @@ namespace SilverStripe\Omnipay\Service;
 
 use Omnipay\Common\Message\NotificationInterface;
 use SilverStripe\Omnipay\GatewayInfo;
+use SilverStripe\Omnipay\Helper;
 use SilverStripe\Omnipay\PaymentGatewayController;
 use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
 use SilverStripe\Omnipay\Exception\InvalidStateException;
@@ -93,7 +94,7 @@ abstract class PaymentService extends \Object
         if (!$this->payment->IsComplete()) {
             $this->payment->Status = 'Void';
             $this->payment->write();
-            $this->payment->extend('onCancelled');
+            Helper::safeExtend($this->payment, 'onCancelled');
         }
 
         return $this->generateServiceResponse(ServiceResponse::SERVICE_CANCELLED);
@@ -317,7 +318,7 @@ abstract class PaymentService extends \Object
         $payment->setAmount($amount);
 
         // allow extensions to update/modify the partial payment
-        $this->extend('updatePartialPayment', $payment);
+        Helper::safeExtend($this, 'updatePartialPayment', $payment);
 
         if ($write) {
             $payment->write();
@@ -352,7 +353,7 @@ abstract class PaymentService extends \Object
         }
 
         // Hook to update service response via extensions. This can be used to customize the service response
-        $this->extend('updateServiceResponse', $response);
+        Helper::safeExtend($this, 'updateServiceResponse', $response);
 
         return $response;
     }

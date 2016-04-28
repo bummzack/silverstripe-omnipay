@@ -397,6 +397,15 @@ Logs will be saved to `debug.log` in the root of your SilverStripe directory.
 
  * Payments have both an amount and a currency. That means you should check if all currencies match if you will be adding them up.
 
+It's highly recommended that you enable general error-logging on production environments.
+Example for your `mysite/_config.php`:
+
+```php
+// log warnings and errors to file.
+// Make sure the logfile is not accessible via HTTP. Best put it in a folder outside of the webroot.
+SS_Log::add_writer(new SS_LogFileWriter('/var/log/silverstripe-log.log'), SS_Log::WARN, '<=');
+```
+
 ## Migrating from Payment module
 
 Before you import your database and do a DB/build, add the following YAML config to your site:
