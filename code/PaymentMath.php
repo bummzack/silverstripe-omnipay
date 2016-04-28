@@ -31,7 +31,8 @@ class PaymentMath
     private static $useBcMath = true;
 
     /**
-     * Subtract two numbers that are represented as a string
+     * Subtract two numbers that are represented as a string.
+     * Numbers will not be rounded but floored instead! So 10.0 - 0.1 with a precision of 0 will result in 9!
      * @param string $amountA first operand
      * @param string $amountB second operand
      * @return string the result as a string
@@ -48,6 +49,7 @@ class PaymentMath
 
     /**
      * Add two numbers that are represented as a string
+     * Numbers will not be rounded but floored instead! So 0.22 + 0.27 with a precision of 1 will result in 0.4!
      * @param string $amountA first operand
      * @param string $amountB second operand
      * @return string the result as a string
@@ -70,7 +72,7 @@ class PaymentMath
      */
     private static function formatFloat($f, $precision)
     {
-        $exponent = pow(10, $precision);
+        $exponent = pow(10, max(0, $precision));
         // clear off additional digits that will cause number_format to round numbers
         $i = floor($f * $exponent) / $exponent;
         return number_format($i, $precision, '.', '');
