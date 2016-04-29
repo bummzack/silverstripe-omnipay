@@ -62,6 +62,35 @@ class RefundServiceTest extends BaseNotificationServiceTest
 
     protected $errorMessageClass = 'RefundError';
 
+    protected $successPaymentExtensionHooks = array(
+        'onRefunded'
+    );
+
+    protected $initiateServiceExtensionHooks = array(
+        'onBeforeRefund',
+        'onAfterRefund',
+        'onAfterSendRefund',
+        'updateServiceResponse'
+    );
+
+    protected $initiateFailedServiceExtensionHooks = array(
+        'onBeforeRefund',
+        'onAfterRefund',
+        'updateServiceResponse'
+    );
+
+    public function setUp()
+    {
+        parent::setUp();
+        RefundService::add_extension('PaymentTest_ServiceExtensionHooks');
+    }
+
+    public function tearDown()
+    {
+        parent::tearDown();
+        RefundService::remove_extension('PaymentTest_ServiceExtensionHooks');
+    }
+
     protected function getService(Payment $payment)
     {
         return RefundService::create($payment);

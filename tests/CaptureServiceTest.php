@@ -61,7 +61,36 @@ class CaptureServiceTest extends BaseNotificationServiceTest
     );
 
     protected $errorMessageClass = 'CaptureError';
-    
+
+    protected $successPaymentExtensionHooks = array(
+        'onCaptured'
+    );
+
+    protected $initiateServiceExtensionHooks = array(
+        'onBeforeCapture',
+        'onAfterCapture',
+        'onAfterSendCapture',
+        'updateServiceResponse'
+    );
+
+    protected $initiateFailedServiceExtensionHooks = array(
+        'onBeforeCapture',
+        'onAfterCapture',
+        'updateServiceResponse'
+    );
+
+    public function setUp()
+    {
+        parent::setUp();
+        CaptureService::add_extension('PaymentTest_ServiceExtensionHooks');
+    }
+
+    public function tearDown()
+    {
+        parent::tearDown();
+        CaptureService::remove_extension('PaymentTest_ServiceExtensionHooks');
+    }
+
     protected function getService(Payment $payment)
     {
         return CaptureService::create($payment);

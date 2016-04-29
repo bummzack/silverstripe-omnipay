@@ -62,6 +62,35 @@ class VoidServiceTest extends BaseNotificationServiceTest
 
     protected $errorMessageClass = 'VoidError';
 
+    protected $successPaymentExtensionHooks = array(
+        'onVoid'
+    );
+
+    protected $initiateServiceExtensionHooks = array(
+        'onBeforeVoid',
+        'onAfterVoid',
+        'onAfterSendVoid',
+        'updateServiceResponse'
+    );
+
+    protected $initiateFailedServiceExtensionHooks = array(
+        'onBeforeVoid',
+        'onAfterVoid',
+        'updateServiceResponse'
+    );
+
+    public function setUp()
+    {
+        parent::setUp();
+        VoidService::add_extension('PaymentTest_ServiceExtensionHooks');
+    }
+
+    public function tearDown()
+    {
+        parent::tearDown();
+        VoidService::remove_extension('PaymentTest_ServiceExtensionHooks');
+    }
+
     protected function getService(Payment $payment)
     {
         return VoidService::create($payment);

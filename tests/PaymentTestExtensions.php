@@ -5,18 +5,59 @@
  */
 class PaymentTest_PaymentExtensionHooks extends DataExtension implements TestOnly
 {
+    protected static $instances = array();
+
+    /**
+     * Fint the PaymentTest_PaymentExtensionHooks instance for a given payment ID
+     * @param $id
+     * @return PaymentTest_PaymentExtensionHooks|null
+     */
+    public static function findExtensionForID($id)
+    {
+        if (empty(self::$instances[$id])) {
+            return null;
+        }
+
+        return self::$instances[$id];
+    }
+
+    public static function ResetAll()
+    {
+        foreach (self::$instances as $instance) {
+            $instance->Reset();
+        }
+        self::$instances = array();
+    }
+
     protected $callStack = array();
+
+    public function setOwner($owner, $ownerBaseClass = null)
+    {
+        parent::setOwner($owner, $ownerBaseClass);
+
+        if ($owner) {
+            self::$instances[$owner->ID] = $this;
+        }
+    }
 
     public function Reset()
     {
         $this->callStack = array();
     }
 
+    /**
+     * Get an array of the extension methods that were called and their arguments
+     * @return array
+     */
     public function getCallStack()
     {
         return $this->callStack;
     }
 
+    /**
+     * Get an array of the extension methods that were called
+     * @return array
+     */
     public function getCalledMethods()
     {
         $result = array();
@@ -25,6 +66,8 @@ class PaymentTest_PaymentExtensionHooks extends DataExtension implements TestOnl
         });
         return $result;
     }
+
+
 
     public function onAuthorized($serviceResponse)
     {
@@ -95,11 +138,19 @@ class PaymentTest_ServiceExtensionHooks extends Extension implements TestOnly
         $this->callStack = array();
     }
 
+    /**
+     * Get an array of the extension methods that were called and their arguments
+     * @return array
+     */
     public function getCallStack()
     {
         return $this->callStack;
     }
 
+    /**
+     * Get an array of the extension methods that were called
+     * @return array
+     */
     public function getCalledMethods()
     {
         $result = array();
