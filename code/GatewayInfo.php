@@ -28,12 +28,18 @@ use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
  * * `token_key` *string*: Key for the token parameter
  * * `required_fields` *array*: An array of required form-fields
  * * `parameters` *map*: All gateway parameters that will be passed along to the Omnipay Gateway instance
- * * `allow_capture` *boolean*: Whether or not capturing of authorized payments should be allowed. Defaults to true.
- * * `allow_refund` *boolean*: Whether or not refunding of captured payments should be allowed. Defaults to true.
- * * `allow_void` *boolean*: Whether or not voiding of authorized payments should be allowed. Defaults to true.
+ * * `can_capture` *string|boolean*: Set how/if authorized payments can be captured. Defaults to "partial"
+ *      Valid values are "off" or `false` (capturing disabled), "full" (can only capture full amounts), "partial" or `true` (can capture partially)
+ * * `can_refund` *string|boolean*: Set how/if captured payments can be refunded. Defaults to "partial"
+ *      Valid values are "off" or `false` (refunding disabled), "full" (can only refund full amounts), "partial" or `true` (can refund partially)
+ * * `can_void` *boolean*: Whether or not voiding of authorized payments should be allowed. Defaults to true.
  */
 class GatewayInfo
 {
+    const OFF = 'off';
+    const FULL = 'full';
+    const PARTIAL = 'partial';
+
     /**
      * Config accessor
      * @return \Config_ForClass
@@ -199,9 +205,9 @@ class GatewayInfo
      */
     public static function allowVoid($gateway)
     {
-        $setting = self::getConfigSetting($gateway, 'allow_void');
-        // if the setting isn't present, default to true, otherwise check for truthy value
-        return ($setting === null || $setting == true);
+        $setting = self::getConfigSetting($gateway, 'can_void');
+        // if the setting isn't present, default to true, otherwise check against falsy values
+        return ($setting === null || !($setting == false || $setting === 'off' || $setting === 'false'));
     }
 
     /**
@@ -211,9 +217,17 @@ class GatewayInfo
      */
     public static function allowCapture($gateway)
     {
-        $setting = self::getConfigSetting($gateway, 'allow_capture');
-        // if the setting isn't present, default to true, otherwise check for truthy value
-        return ($setting === null || $setting == true);
+        return self::configToConstant($gateway, 'can_capture') !== self::OFF;
+    }
+
+    /**
+     * Whether or not the given gateway should allow partial capturing of payments
+     * @param string $gateway the gateway name
+     * @return bool
+     */
+    public static function allowPartialCapture($gateway)
+    {
+        return self::configToConstant($gateway, 'can_capture') === self::PARTIAL;
     }
 
     /**
@@ -223,9 +237,17 @@ class GatewayInfo
      */
     public static function allowRefund($gateway)
     {
-        $setting = self::getConfigSetting($gateway, 'allow_refund');
-        // if the setting isn't present, default to true, otherwise check for truthy value
-        return ($setting === null || $setting == true);
+        return self::configToConstant($gateway, 'can_refund') !== self::OFF;
+    }
+
+    /**
+     * Whether or not the given gateway should allow partial refunding of payments
+     * @param string $gateway the gateway name
+     * @return bool
+     */
+    public static function allowPartialRefund($gateway)
+    {
+        return self::configToConstant($gateway, 'can_refund') === self::PARTIAL;
     }
 
     /**
@@ -320,6 +342,31 @@ class GatewayInfo
         }
 
         return isset($config[$key]) ? $config[$key] : null;
+    }
+
+    /**
+     * Helper method to convert a config setting to a predefined constant for values that can have the three states:
+     * OFF, FULL or PARTIAL
+     * @param string $gateway the gateway name
+     * @param string $key the config key
+     * @return string either "off", "full" or "partial"
+     */
+    protected static function configToConstant($gateway, $key)
+    {
+        $value = self::getConfigSetting($gateway, $key);
+        if ($value === null) {
+            return self::PARTIAL;
+        }
+
+        if ($value == false || $value === 'off') {
+            return self::OFF;
+        }
+
+        if ($value === 'full') {
+            return self::FULL;
+        }
+
+        return self::PARTIAL;
     }
 
     // -----------------------------------------------------------------------------------------------------------------

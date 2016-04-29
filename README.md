@@ -72,18 +72,18 @@ To configure the individual gateway parameters, use `GatewayInfo` and add a key 
 
 Each Gateway can have the following settings:
 
-| Setting                  | Type      | Description
-| ------------------------ | --------- | ---
-| `is_manual`              | *boolean* | Set this to true if this gateway should be considered a "Manual" gateway (eg. Invoice)
-| `use_authorize`          | *boolean* | Whether or not this gateway should prefer authorize over purchase
-| `use_async_notification` | *boolean* | When set to true, this gateway will receive asynchronous notifications from the payment provider to confirm status changes
-| `token_key`              | *string*  | Key for the token parameter (for gateways that generate tokens for credit-cards)
-| `required_fields`        | *array*   | An array of required form-fields
-| `parameters`             | *map*     | All gateway parameters that will be passed along to the Omnipay Gateway instance
-| `is_offsite`             | *boolean* | You can explicitly mark this gateway as being offsite. Use with caution and only if the system fails to automatically determine this
-| `allow_capture`          | *boolean* | Whether or not capturing of authorized payments should be allowed. Defaults to *true*. Some payment providers capture payment automatically after some period of time, or the person using the CMS should not be allowed to capture payments. You can then disable this feature
-| `allow_refund`           | *boolean* | Whether or not refunding of captured payments should be allowed. Defaults to *true*
-| `allow_void`             | *boolean* | Whether or not voiding of authorized payments should be allowed. Defaults to *true*
+| Setting                  | Type             | Description
+| ------------------------ | ---------------- | ---
+| `is_manual`              | *boolean*        | Set this to true if this gateway should be considered a "Manual" gateway (eg. Invoice)
+| `use_authorize`          | *boolean*        | Whether or not this gateway should prefer authorize over purchase
+| `use_async_notification` | *boolean*        | When set to true, this gateway will receive asynchronous notifications from the payment provider to confirm status changes
+| `token_key`              | *string*         | Key for the token parameter (for gateways that generate tokens for credit-cards)
+| `required_fields`        | *array*          | An array of required form-fields
+| `parameters`             | *map*            | All gateway parameters that will be passed along to the Omnipay Gateway instance
+| `is_offsite`             | *boolean*        | You can explicitly mark this gateway as being offsite. Use with caution and only if the system fails to automatically determine this
+| `can_capture`            | *boolean/string* | Set how/if authorized payments can be captured. Defaults to "partial". Valid values are "off" or `false` (capturing disabled), "full" (can only capture full amounts), "partial" or `true` (can capture partially)
+| `can_refund`             | *boolean/string* | Set how/if captured payments can be refunded. Defaults to "partial". Valid values are "off" or `false` (refunding disabled), "full" (can only refund full amounts), "partial" or `true` (can refund partially)
+| `can_void`               | *boolean*        | Whether or not voiding of authorized payments should be allowed. Defaults to *true*
 
 ```yaml
 ---

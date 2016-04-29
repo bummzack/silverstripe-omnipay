@@ -45,9 +45,9 @@ class GatewayInfoTest extends SapphireTest
                 'name', 'number'
             ),
             'is_offsite' => true,
-            'allow_capture' => true,
-            'allow_refund' => false,
-            'allow_void' => false
+            'can_capture' => true,
+            'can_refund' => 'full',
+            'can_void' => false
         ));
     }
 
@@ -304,23 +304,67 @@ class GatewayInfoTest extends SapphireTest
     {
         // a gateway without explicitly disabling void, capture and refund should allow per default
         $this->assertTrue(GatewayInfo::allowCapture('Dummy'));
+        $this->assertTrue(GatewayInfo::allowPartialCapture('Dummy'));
         $this->assertTrue(GatewayInfo::allowRefund('Dummy'));
+        $this->assertTrue(GatewayInfo::allowPartialRefund('Dummy'));
         $this->assertTrue(GatewayInfo::allowVoid('Dummy'));
 
         // check if the config is respected
         $this->assertTrue(GatewayInfo::allowCapture('PaymentExpress_PxPay'));
-        $this->assertFalse(GatewayInfo::allowRefund('PaymentExpress_PxPay'));
+        $this->assertTrue(GatewayInfo::allowPartialCapture('PaymentExpress_PxPay'));
+        $this->assertTrue(GatewayInfo::allowRefund('PaymentExpress_PxPay'));
+        $this->assertFalse(GatewayInfo::allowPartialRefund('PaymentExpress_PxPay'));
         $this->assertFalse(GatewayInfo::allowVoid('PaymentExpress_PxPay'));
 
-        // check with "truthy" and "falsy" values
+        // check with explicit values
         Config::inst()->update('GatewayInfo', 'PaymentExpress_PxPay', array(
-            'allow_capture' => '0',
-            'allow_refund' => '1',
-            'allow_void' => '1'
+            'can_capture' => 'full',
+            'can_refund' => 'off',
+            'can_void' => 'off'
+        ));
+
+        $this->assertTrue(GatewayInfo::allowCapture('PaymentExpress_PxPay'));
+        $this->assertFalse(GatewayInfo::allowPartialCapture('PaymentExpress_PxPay'));
+        $this->assertFalse(GatewayInfo::allowRefund('PaymentExpress_PxPay'));
+        $this->assertFalse(GatewayInfo::allowPartialRefund('PaymentExpress_PxPay'));
+        $this->assertFalse(GatewayInfo::allowVoid('PaymentExpress_PxPay'));
+
+        Config::inst()->update('GatewayInfo', 'PaymentExpress_PxPay', array(
+            'can_capture' => 'partial',
+            'can_refund' => 'full',
+            'can_void' => 'false'
+        ));
+
+        $this->assertTrue(GatewayInfo::allowCapture('PaymentExpress_PxPay'));
+        $this->assertTrue(GatewayInfo::allowPartialCapture('PaymentExpress_PxPay'));
+        $this->assertTrue(GatewayInfo::allowRefund('PaymentExpress_PxPay'));
+        $this->assertFalse(GatewayInfo::allowPartialRefund('PaymentExpress_PxPay'));
+        $this->assertFalse(GatewayInfo::allowVoid('PaymentExpress_PxPay'));
+
+        // check with true/false
+        Config::inst()->update('GatewayInfo', 'PaymentExpress_PxPay', array(
+            'can_capture' => false,
+            'can_refund' => true,
+            'can_void' => true
         ));
 
         $this->assertFalse(GatewayInfo::allowCapture('PaymentExpress_PxPay'));
+        $this->assertFalse(GatewayInfo::allowPartialCapture('PaymentExpress_PxPay'));
         $this->assertTrue(GatewayInfo::allowRefund('PaymentExpress_PxPay'));
+        $this->assertTrue(GatewayInfo::allowPartialRefund('PaymentExpress_PxPay'));
+        $this->assertTrue(GatewayInfo::allowVoid('PaymentExpress_PxPay'));
+
+        // check with "truthy" and "falsy" values
+        Config::inst()->update('GatewayInfo', 'PaymentExpress_PxPay', array(
+            'can_capture' => '0',
+            'can_refund' => '1',
+            'can_void' => '1'
+        ));
+
+        $this->assertFalse(GatewayInfo::allowCapture('PaymentExpress_PxPay'));
+        $this->assertFalse(GatewayInfo::allowPartialCapture('PaymentExpress_PxPay'));
+        $this->assertTrue(GatewayInfo::allowRefund('PaymentExpress_PxPay'));
+        $this->assertTrue(GatewayInfo::allowPartialRefund('PaymentExpress_PxPay'));
         $this->assertTrue(GatewayInfo::allowVoid('PaymentExpress_PxPay'));
     }
 }
