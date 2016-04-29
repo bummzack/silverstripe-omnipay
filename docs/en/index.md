@@ -168,6 +168,7 @@ Refund messages
 
  * RefundRequest
  * RefundedResponse
+ * PartiallyRefundedResponse
  * RefundError
 
 Void messages

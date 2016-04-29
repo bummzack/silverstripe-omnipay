@@ -11,6 +11,7 @@ use SilverStripe\Omnipay\PaymentMath;
 
 class RefundService extends NotificationCompleteService
 {
+    protected $startState = 'Captured';
     protected $endState = 'Refunded';
     protected $pendingState = 'PendingRefund';
     protected $requestMessageType = 'RefundRequest';
@@ -120,14 +121,22 @@ class RefundService extends NotificationCompleteService
 
     protected function markCompleted($endStatus, ServiceResponse $serviceResponse, $gatewayMessage)
     {
+        // Get partial payments
         $partials = $this->payment->getPartialPayments()->filter('Status', 'PendingRefund');
 
         if ($partials->count() > 0) {
-            $total = $runningTotal = $this->payment->MoneyAmount;
+            $i = 0;
+            $runningTotal = $this->payment->MoneyAmount;
             foreach ($partials as $payment) {
-                $runningTotal = PaymentMath::Subtract($runningTotal, $payment->MoneyAmount);
-                $payment->Status = 'Refunded';
+                // only the first, eg. most recent payment should be considered valid. All others should be set to void
+                if($i === 0){
+                    $runningTotal = PaymentMath::Subtract($runningTotal, $payment->MoneyAmount);
+                    $payment->Status = 'Refunded';
+                } else {
+                    $payment->Status = 'Void';
+                }
                 $payment->write();
+                $i++;
             }
 
             // Ugly hack to set the money amount

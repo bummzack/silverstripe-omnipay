@@ -10,6 +10,7 @@ use SilverStripe\Omnipay\Helper;
 
 class VoidService extends NotificationCompleteService
 {
+    protected $startState = 'Authorized';
     protected $endState = 'Void';
     protected $pendingState = 'PendingVoid';
     protected $requestMessageType = 'VoidRequest';

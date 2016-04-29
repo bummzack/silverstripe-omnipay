@@ -25,7 +25,7 @@ class Helper
      * @param mixed $a6 optional parameter 6
      * @param mixed $a7 optional parameter 7
      * @return array
-     * @throws \Exception any exception that occured (only in dev and test environments)
+     * @throws \Exception any exception that occurred (only in dev and test environments)
      */
     public static function safeExtend(
         $object,
@@ -65,7 +65,14 @@ class Helper
 
         return array();
     }
-    
+
+    /**
+     * Safeguard a method by catching exceptions/errors that might be thrown and redirect them to the log
+     * @param \Closure $method
+     * @param string $errorMessage custom message to write to the log
+     * @return mixed whatever your closure returns
+     * @throws \Exception any exception that occurred (only in dev and test environments)
+     */
     public static function safeguard(\Closure $method, $errorMessage)
     {
         set_error_handler(function ($severity, $message, $file, $line) {

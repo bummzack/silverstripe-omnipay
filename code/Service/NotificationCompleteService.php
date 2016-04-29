@@ -18,6 +18,8 @@ use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
  */
 abstract class NotificationCompleteService extends PaymentService
 {
+    /** @var string the start state  */
+    protected $startState;
 
     /** @var string the end state to reach */
     protected $endState;
@@ -30,7 +32,6 @@ abstract class NotificationCompleteService extends PaymentService
 
     /** @var  string message type used to store errors */
     protected $errorMessageType;
-
 
     /**
      * Complete a pending task.
@@ -47,6 +48,11 @@ abstract class NotificationCompleteService extends PaymentService
         // The payment is already in the desired endstate
         if ($this->payment->Status === $this->endState) {
             return $this->generateServiceResponse(ServiceResponse::SERVICE_NOTIFICATION);
+        }
+
+        // we're still in the start state, cannot complete here
+        if ($this->payment->Status === $this->startState) {
+            return $this->generateServiceResponse(ServiceResponse::SERVICE_NOTIFICATION | ServiceResponse::SERVICE_ERROR);
         }
 
         if ($this->payment->Status !== $this->pendingState) {

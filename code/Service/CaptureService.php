@@ -16,6 +16,7 @@ class CaptureService extends NotificationCompleteService
 {
     //TODO: Ensure that this can also capture partial payments. This would probably have to generate additional Payments
 
+    protected $startState = 'Authorized';
     protected $endState = 'Captured';
     protected $pendingState = 'PendingCapture';
     protected $requestMessageType = 'CaptureRequest';

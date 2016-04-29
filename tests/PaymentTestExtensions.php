@@ -168,6 +168,14 @@ class PaymentTest_ServiceExtensionHooks extends Extension implements TestOnly
         );
     }
 
+    public function updatePartialPayment($newPayment, $originalPayment)
+    {
+        $this->callStack[] = array(
+            'method' => 'updatePartialPayment',
+            'args' => array($newPayment, $originalPayment)
+        );
+    }
+
     public function onBeforeAuthorize($data)
     {
         $this->callStack[] = array(

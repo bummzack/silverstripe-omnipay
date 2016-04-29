@@ -317,11 +317,16 @@ abstract class PaymentService extends \Object
         $payment->setCurrency($this->payment->getCurrency());
         $payment->setAmount($amount);
 
+        // set status later, because otherwise amount and currency become immutable
+        $payment->Status = $status;
+
         // allow extensions to update/modify the partial payment
-        Helper::safeExtend($this, 'updatePartialPayment', $payment);
+        Helper::safeExtend($this, 'updatePartialPayment', $payment, $this->payment);
 
         if ($write) {
-            $payment->write();
+            Helper::safeguard(function() use (&$payment) {
+                $payment->write();
+            }, 'Unable to write newly created partial Payment!');
         }
 
         return $payment;

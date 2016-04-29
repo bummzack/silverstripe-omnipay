@@ -269,7 +269,8 @@ final class Payment extends DataObject
     }
 
     /**
-     * Get partial payments that have this payment as initial payment
+     * Get partial payments that have this payment as initial payment.
+     * The list will be sorted from newest to oldest
      * @return DataList|null
      */
     public function getPartialPayments()
@@ -279,7 +280,8 @@ final class Payment extends DataObject
         }
 
         return Payment::get()
-            ->filter('InitialPaymentID', $this->ID);
+            ->filter('InitialPaymentID', $this->ID)
+            ->sort(array('Created' => 'DESC', 'ID' => 'DESC'));
     }
 
     /**
