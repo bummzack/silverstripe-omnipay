@@ -122,7 +122,7 @@ class RefundService extends NotificationCompleteService
     protected function markCompleted($endStatus, ServiceResponse $serviceResponse, $gatewayMessage)
     {
         // Get partial payments
-        $partials = $this->payment->getPartialPayments()->filter('Status', 'PendingRefund');
+        $partials = $this->payment->getPartialPayments()->filter('Status', $this->pendingState);
 
         if ($partials->count() > 0) {
             $i = 0;

@@ -60,6 +60,21 @@ class VoidServiceTest extends BaseNotificationServiceTest
         )
     );
 
+    protected $notificationFailureMessages = array(
+        array(
+            'ClassName' => 'AuthorizedResponse',
+            'Reference' => 'authorizedPaymentReceipt'
+        ),
+        array(
+            'ClassName' => 'VoidRequest',
+            'Reference' => 'authorizedPaymentReceipt'
+        ),
+        array(
+            'ClassName' => 'NotificationError',
+            'Reference' => 'authorizedPaymentReceipt'
+        )
+    );
+
     protected $errorMessageClass = 'VoidError';
 
     protected $successPaymentExtensionHooks = array(

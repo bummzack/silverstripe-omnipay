@@ -1,6 +1,7 @@
 <?php
 
 use SilverStripe\Omnipay\Service\RefundService;
+use Omnipay\Common\Message\NotificationInterface;
 
 /**
  * Test the refund service
@@ -56,6 +57,21 @@ class RefundServiceTest extends BaseNotificationServiceTest
         ),
         array( // the generated refund response
             'ClassName' => 'RefundError',
+            'Reference' => 'paymentReceipt'
+        )
+    );
+
+    protected $notificationFailureMessages = array(
+        array(
+            'ClassName' => 'PurchasedResponse',
+            'Reference' => 'paymentReceipt'
+        ),
+        array(
+            'ClassName' => 'RefundRequest',
+            'Reference' => 'paymentReceipt'
+        ),
+        array(
+            'ClassName' => 'NotificationError',
             'Reference' => 'paymentReceipt'
         )
     );
@@ -369,5 +385,68 @@ class RefundServiceTest extends BaseNotificationServiceTest
         $this->assertEquals('Refunded', $payment->Status);
         // the amount should be limited to the original total
         $this->assertEquals('769.50', $payment->MoneyAmount);
+    }
+
+    public function testPartialRefundFailed()
+    {
+        $stubGateway = $this->buildPaymentGatewayStub(false, $this->fixtureReceipt);
+        // register our mock gateway factory as injection
+        Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
+
+        // load an authorized payment from fixture
+        $payment = $this->objFromFixture("Payment", $this->fixtureIdentifier);
+        $service = $this->getService($payment);
+
+        $service->initiate(array('amount' => '100.00'));
+
+        // there should be NO partial payments
+        $this->assertEquals(0, $payment->getPartialPayments()->count());
+
+        // Payment should be unaltered
+        $this->assertEquals('Captured', $payment->Status);
+        $this->assertEquals('769.50', $payment->MoneyAmount);
+    }
+
+    public function testPartialRefundViaNotificationFailed()
+    {
+        // load a payment from fixture
+        $payment = $this->objFromFixture("Payment", $this->fixtureIdentifier);
+
+        // use notification on the gateway
+        Config::inst()->update('GatewayInfo', $payment->Gateway, array(
+            'use_async_notification' => true
+        ));
+
+        $stubGateway = $this->buildPaymentGatewayStub(
+            false,
+            $this->fixtureReceipt,
+            NotificationInterface::STATUS_FAILED
+        );
+
+        // register our mock gateway factory as injection
+        Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
+
+        $service = $this->getService($payment);
+
+        $service->initiate(array('amount' => '669.50'));
+
+        // Now a notification comes in (will fail)
+        $this->get('paymentendpoint/'. $payment->Identifier .'/notify');
+
+        // we'll have to "reload" the payment from the DB now
+        $payment = Payment::get()->byID($payment->ID);
+
+        // Status should be reset
+        $this->assertEquals('Captured', $payment->Status);
+        // the payment balance is unaltered
+        $this->assertEquals('769.50', $payment->MoneyAmount);
+
+        // the partial payment should be void
+        $partialPayment = $payment->getPartialPayments()->first();
+        $this->assertEquals('Void', $partialPayment->Status);
+        $this->assertEquals('669.50', $partialPayment->MoneyAmount);
+
+        // check existance of messages
+        $this->assertDOSContains($this->notificationFailureMessages, $payment->Messages());
     }
 }

@@ -60,6 +60,21 @@ class CaptureServiceTest extends BaseNotificationServiceTest
         )
     );
 
+    protected $notificationFailureMessages = array(
+        array(
+            'ClassName' => 'AuthorizedResponse',
+            'Reference' => 'authorizedPaymentReceipt'
+        ),
+        array(
+            'ClassName' => 'CaptureRequest',
+            'Reference' => 'authorizedPaymentReceipt'
+        ),
+        array(
+            'ClassName' => 'NotificationError',
+            'Reference' => 'authorizedPaymentReceipt'
+        )
+    );
+
     protected $errorMessageClass = 'CaptureError';
 
     protected $successPaymentExtensionHooks = array(

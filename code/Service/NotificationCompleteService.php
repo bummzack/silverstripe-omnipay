@@ -63,6 +63,7 @@ abstract class NotificationCompleteService extends PaymentService
 
         // exit early
         if ($serviceResponse->isError()) {
+            $this->notificationFailure($serviceResponse);
             return $serviceResponse;
         }
 
@@ -82,5 +83,31 @@ abstract class NotificationCompleteService extends PaymentService
         }
 
         return $serviceResponse;
+    }
+
+    /**
+     * Method to handle notification failures. Here we have to check if the gateway actually reported a failure
+     * and then update the payment status accordingly!
+     * @param ServiceResponse $serviceResponse
+     * @return void
+     */
+    protected function notificationFailure($serviceResponse)
+    {
+        $omnipayResponse = $serviceResponse->getOmnipayResponse();
+
+        // if there's no response from the gateway, don't bother. Errors are already in messages/log
+        if (!$omnipayResponse) {
+            return;
+        }
+
+        // void any pending partial payments
+        foreach ($this->payment->getPartialPayments()->filter('Status', $this->pendingState) as $payment) {
+            $payment->Status = 'Void';
+            $payment->write();
+        }
+
+        // reset the payment to the start-state
+        $this->payment->Status = $this->startState;
+        $this->payment->write();
     }
 }
