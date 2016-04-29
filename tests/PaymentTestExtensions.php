@@ -2,6 +2,7 @@
 
 /**
  * Extension that can be used to test payment hooks
+ * @codeCoverageIgnore
  */
 class PaymentTest_PaymentExtensionHooks extends DataExtension implements TestOnly
 {
