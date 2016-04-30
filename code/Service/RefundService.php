@@ -3,6 +3,7 @@
 namespace SilverStripe\Omnipay\Service;
 
 use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
+use SilverStripe\Omnipay\Exception\InvalidParameterException;
 use SilverStripe\Omnipay\Exception\MissingParameterException;
 use Omnipay\Common\Exception\OmnipayException;
 use SilverStripe\Omnipay\GatewayInfo;
@@ -63,18 +64,31 @@ class RefundService extends NotificationCompleteService
             );
         }
 
-        $total = $amount = (float)$this->payment->MoneyAmount;
-        // If there's a custom amount, ensure it doesn't exceed the payment amount
-        if (!empty($data['amount']) && is_numeric($data['amount'])) {
-            $amount = min($data['amount'], $total);
+        $amount = $this->payment->MoneyAmount;
+        $isPartial = false;
+        
+        if (!empty($data['amount'])) {
+            $amount = $data['amount'];
+            if (!is_numeric($amount)) {
+                throw new InvalidParameterException('The "amount" parameter has to be numeric');
+            }
+
+            $diff = PaymentMath::compare($this->payment->MoneyAmount, $amount);
+            if ($diff === -1) {
+                throw new InvalidParameterException('The "amount" to refund cannot exceed than the captured amount.');
+            }
+
+            $isPartial = $diff === 1;
         }
 
-        $isPartial = $amount < $total;
+        if ($isPartial && !$this->payment->canRefund(true)) {
+            throw new InvalidParameterException('This payment cannot be partially refunded (unsupported by gateway)');
+        }
 
         $gatewayData = array_merge(
             $data,
             array(
-                'amount' => $amount,
+                'amount' => (float)$amount,
                 'currency' => $this->payment->MoneyCurrency,
                 'transactionReference' => $reference,
                 'notifyUrl' => $this->getEndpointUrl('notify')

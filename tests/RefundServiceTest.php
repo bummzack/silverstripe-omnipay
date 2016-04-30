@@ -343,6 +343,9 @@ class RefundServiceTest extends BaseNotificationServiceTest
         ), $payment->Messages());
     }
 
+    /**
+     * @expectedException \SilverStripe\Omnipay\Exception\InvalidParameterException
+     */
     public function testLargerAmount()
     {
         $stubGateway = $this->buildPaymentGatewayStub(true, $this->fixtureReceipt);
@@ -354,17 +357,13 @@ class RefundServiceTest extends BaseNotificationServiceTest
         $service = $this->getService($payment);
 
         // We supply the amount, but specify an amount that is way over what was captured
+        // This will throw an InvalidParameterException
         $service->initiate(array('amount' => '1000000.00'));
-
-        // there should be NO partial payments
-        $this->assertEquals(0, $payment->getPartialPayments()->count());
-
-        // check payment status
-        $this->assertEquals('Refunded', $payment->Status);
-        // the amount should be limited to the original total
-        $this->assertEquals('769.50', $payment->MoneyAmount);
     }
 
+    /**
+     * @expectedException \SilverStripe\Omnipay\Exception\InvalidParameterException
+     */
     public function testInvalidAmount()
     {
         $stubGateway = $this->buildPaymentGatewayStub(true, $this->fixtureReceipt);
@@ -376,15 +375,31 @@ class RefundServiceTest extends BaseNotificationServiceTest
         $service = $this->getService($payment);
 
         // We supply the amount, but specify an amount that is not a number
+        // This will throw an InvalidParameterException
         $service->initiate(array('amount' => 'test'));
+    }
 
-        // there should be NO partial payments
-        $this->assertEquals(0, $payment->getPartialPayments()->count());
+    /**
+     * @expectedException \SilverStripe\Omnipay\Exception\InvalidParameterException
+     */
+    public function testPartialRefundUnsupported()
+    {
+        $stubGateway = $this->buildPaymentGatewayStub(true, $this->fixtureReceipt);
+        // register our mock gateway factory as injection
+        Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
 
-        // check payment status
-        $this->assertEquals('Refunded', $payment->Status);
-        // the amount should be limited to the original total
-        $this->assertEquals('769.50', $payment->MoneyAmount);
+        // load an authorized payment from fixture
+        $payment = $this->objFromFixture("Payment", $this->fixtureIdentifier);
+        $service = $this->getService($payment);
+
+        // only allow full refunds, thus disabling partial refunds
+        Config::inst()->update('GatewayInfo', $payment->Gateway, array(
+           'can_refund' => 'full'
+        ));
+
+        // We supply a partial amount
+        // This will throw an InvalidParameterException
+        $service->initiate(array('amount' => '10.00'));
     }
 
     public function testPartialRefundFailed()

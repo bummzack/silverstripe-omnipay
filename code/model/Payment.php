@@ -309,11 +309,16 @@ final class Payment extends DataObject
 
     /**
      * Whether or not this payment can be captured
+     * @param boolean $partial check if payment can be partially captured. Defaults to false
      * @return bool
      */
-    public function canCapture()
+    public function canCapture($partial = false)
     {
-        return ($this->Status == 'Authorized' && GatewayInfo::allowCapture($this->Gateway));
+        return (
+            $this->Status == 'Authorized' && ($partial
+                ? GatewayInfo::allowPartialCapture($this->Gateway)
+                : GatewayInfo::allowCapture($this->Gateway))
+        );
     }
 
     /**
@@ -327,11 +332,16 @@ final class Payment extends DataObject
 
     /**
      * Whether or not this payment can be refunded
+     * @param boolean $partial check if payment can be partially refunded. Defaults to false
      * @return bool
      */
-    public function canRefund()
+    public function canRefund($partial = false)
     {
-        return ($this->Status == 'Captured' && GatewayInfo::allowRefund($this->Gateway));
+        return (
+            $this->Status == 'Captured' && ($partial
+                ? GatewayInfo::allowPartialRefund($this->Gateway)
+                : GatewayInfo::allowRefund($this->Gateway))
+        );
     }
 
     /**

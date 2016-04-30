@@ -119,7 +119,7 @@ class PaymentModelTest extends PaymentTest
 
         $payment->Gateway = 'Dummy';
         $this->assertEquals($payment->Gateway, 'Dummy');
-        
+
         $payment->Status = 'Authorized';
         $payment->Gateway = 'Manual';
         $this->assertEquals(
@@ -127,5 +127,99 @@ class PaymentModelTest extends PaymentTest
             'Dummy',
             'Payment status should be immutable once it\'s no longer Created'
         );
+    }
+
+    public function testCanCapture()
+    {
+        $payment = Payment::create()->init('Manual', 120, 'EUR');
+
+        // cannot capture new payment
+        $this->assertFalse($payment->canCapture());
+        $this->assertFalse($payment->canCapture(true));
+
+        $payment->Status = 'Authorized';
+
+        $this->assertTrue($payment->canCapture());
+        $this->assertTrue($payment->canCapture(true));
+
+        Config::inst()->update('GatewayInfo', 'Manual', array(
+            'can_capture' => false
+        ));
+
+        $this->assertFalse($payment->canCapture());
+        $this->assertFalse($payment->canCapture(true));
+
+        Config::inst()->update('GatewayInfo', 'Manual', array(
+            'can_capture' => 'full'
+        ));
+
+        $this->assertTrue($payment->canCapture());
+        $this->assertFalse($payment->canCapture(true));
+
+        Config::inst()->update('GatewayInfo', 'Manual', array(
+            'can_capture' => 'partial'
+        ));
+
+        $this->assertTrue($payment->canCapture());
+        $this->assertTrue($payment->canCapture(true));
+    }
+
+    public function testCanRefund()
+    {
+        $payment = Payment::create()->init('Manual', 120, 'EUR');
+
+        // cannot refund new payment
+        $this->assertFalse($payment->canRefund());
+        $this->assertFalse($payment->canRefund(true));
+
+        $payment->Status = 'Captured';
+
+        $this->assertTrue($payment->canRefund());
+        $this->assertTrue($payment->canRefund(true));
+
+        Config::inst()->update('GatewayInfo', 'Manual', array(
+            'can_refund' => false
+        ));
+
+        $this->assertFalse($payment->canRefund());
+        $this->assertFalse($payment->canRefund(true));
+
+        Config::inst()->update('GatewayInfo', 'Manual', array(
+            'can_refund' => 'full'
+        ));
+
+        $this->assertTrue($payment->canRefund());
+        $this->assertFalse($payment->canRefund(true));
+
+        Config::inst()->update('GatewayInfo', 'Manual', array(
+            'can_refund' => 'partial'
+        ));
+
+        $this->assertTrue($payment->canRefund());
+        $this->assertTrue($payment->canRefund(true));
+    }
+
+    public function testCanVoid()
+    {
+        $payment = Payment::create()->init('Manual', 120, 'EUR');
+
+        // cannot void new payment
+        $this->assertFalse($payment->canVoid());
+
+        $payment->Status = 'Authorized';
+
+        $this->assertTrue($payment->canVoid());
+
+        Config::inst()->update('GatewayInfo', 'Manual', array(
+            'can_void' => false
+        ));
+
+        $this->assertFalse($payment->canVoid());
+
+        Config::inst()->update('GatewayInfo', 'Manual', array(
+            'can_void' => true
+        ));
+
+        $this->assertTrue($payment->canVoid());
     }
 }
