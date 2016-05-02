@@ -32,6 +32,7 @@ class RefundService extends NotificationCompleteService
      *
      * @inheritdoc
      * @throws MissingParameterException if no transaction reference can be found from messages or parameters
+     * @throws InvalidParameterException if the amount parameter was invalid
      */
     public function initiate($data = array())
     {
@@ -73,19 +74,23 @@ class RefundService extends NotificationCompleteService
         if (!empty($data['amount'])) {
             $amount = $data['amount'];
             if (!is_numeric($amount)) {
-                throw new InvalidParameterException('The "amount" parameter has to be numeric');
+                throw new InvalidParameterException('The "amount" parameter has to be numeric.');
             }
 
-            $diff = PaymentMath::compare($this->payment->MoneyAmount, $amount);
-            if ($diff === -1) {
-                throw new InvalidParameterException('The "amount" to refund cannot exceed than the captured amount.');
+            if (!($amount > 0)){
+                throw new InvalidParameterException('The "amount" parameter has to be positive.');
             }
 
-            $isPartial = $diff === 1;
+            $compare = PaymentMath::compare($this->payment->MoneyAmount, $amount);
+            if ($compare === -1) {
+                throw new InvalidParameterException('The "amount" to refund cannot exceed the captured amount.');
+            }
+
+            $isPartial = $compare === 1;
         }
 
         if ($isPartial && !$this->payment->canRefund(true)) {
-            throw new InvalidParameterException('This payment cannot be partially refunded (unsupported by gateway)');
+            throw new InvalidParameterException('This payment cannot be partially refunded (unsupported by gateway).');
         }
 
         $gatewayData = array_merge(
@@ -118,7 +123,7 @@ class RefundService extends NotificationCompleteService
 
         if ($serviceResponse->isAwaitingNotification()) {
             if($isPartial){
-                $this->createPartialPayment($amount, $this->pendingState);
+                $this->createPartialPayment(PaymentMath::multiply($amount, '-1'), $this->pendingState);
             }
             $this->payment->Status = $this->pendingState;
             $this->payment->write();
@@ -127,7 +132,7 @@ class RefundService extends NotificationCompleteService
                 $this->createMessage($this->errorMessageType, $response);
             } else {
                 if($isPartial){
-                    $this->createPartialPayment($amount, $this->pendingState);
+                    $this->createPartialPayment(PaymentMath::multiply($amount, '-1'), $this->pendingState);
                 }
                 $this->markCompleted($this->endState, $serviceResponse, $response);
             }
@@ -143,11 +148,13 @@ class RefundService extends NotificationCompleteService
 
         if ($partials->count() > 0) {
             $i = 0;
-            $runningTotal = $this->payment->MoneyAmount;
+            $total = $this->payment->MoneyAmount;
             foreach ($partials as $payment) {
                 // only the first, eg. most recent payment should be considered valid. All others should be set to void
-                if($i === 0){
-                    $runningTotal = PaymentMath::Subtract($runningTotal, $payment->MoneyAmount);
+                if ($i === 0) {
+                    $total = PaymentMath::add($total, $payment->MoneyAmount);
+                    $payment->Status = 'Created';
+                    $payment->setAmount(PaymentMath::multiply($payment->MoneyAmount, '-1'));
                     $payment->Status = 'Refunded';
                 } else {
                     $payment->Status = 'Void';
@@ -158,10 +165,10 @@ class RefundService extends NotificationCompleteService
 
             // Ugly hack to set the money amount
             $this->payment->Status = 'Created';
-            $this->payment->setAmount($runningTotal);
+            $this->payment->setAmount($total);
 
             // If not everything was refunded, the payment should still have the "Captured" status
-            if((float)$runningTotal > 0){
+            if ($total > 0) {
                 $endStatus = 'Captured';
             }
         }

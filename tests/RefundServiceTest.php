@@ -114,7 +114,7 @@ class RefundServiceTest extends BaseNotificationServiceTest
 
     public function testFullRefund()
     {
-        // load an authorized payment from fixture
+        // load a captured payment from fixture
         $payment = $this->objFromFixture("Payment", $this->fixtureIdentifier);
 
         $stubGateway = $this->buildPaymentGatewayStub(true, $this->fixtureReceipt);
@@ -151,7 +151,7 @@ class RefundServiceTest extends BaseNotificationServiceTest
 
     public function testPartialRefund()
     {
-        // load an authorized payment from fixture
+        // load a captured payment from fixture
         $payment = $this->objFromFixture("Payment", $this->fixtureIdentifier);
 
         $stubGateway = $this->buildPaymentGatewayStub(true, $this->fixtureReceipt);
@@ -229,10 +229,10 @@ class RefundServiceTest extends BaseNotificationServiceTest
         // there must be a partial payment
         $this->assertEquals(1, $payment->getPartialPayments()->count());
 
-        // the partial payment should be pending
+        // the partial payment should be pending and negative
         $partialPayment = $payment->getPartialPayments()->first();
         $this->assertEquals('PendingRefund', $partialPayment->Status);
-        $this->assertEquals('669.50', $partialPayment->MoneyAmount);
+        $this->assertEquals('-669.50', $partialPayment->MoneyAmount);
 
         // Now a notification comes in
         $this->get('paymentendpoint/'. $payment->Identifier .'/notify');
@@ -257,7 +257,7 @@ class RefundServiceTest extends BaseNotificationServiceTest
         // the payment balance is reduced to 100.00
         $this->assertEquals('100.00', $payment->MoneyAmount);
 
-        // the partial payment should no longer be pending
+        // the partial payment should no longer be pending and positive
         $partialPayment = $payment->getPartialPayments()->first();
         $this->assertEquals('Refunded', $partialPayment->Status);
         $this->assertEquals('669.50', $partialPayment->MoneyAmount);
@@ -328,7 +328,7 @@ class RefundServiceTest extends BaseNotificationServiceTest
         // the partial payment should be pending and have the first initiated amount
         $partialPayment = $payment->getPartialPayments()->first();
         $this->assertEquals('PendingRefund', $partialPayment->Status);
-        $this->assertEquals('100.00', $partialPayment->MoneyAmount);
+        $this->assertEquals('-100.00', $partialPayment->MoneyAmount);
 
         // check existance of messages
         $this->assertDOSContains(array(
@@ -352,7 +352,7 @@ class RefundServiceTest extends BaseNotificationServiceTest
         // register our mock gateway factory as injection
         Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
 
-        // load an authorized payment from fixture
+        // load a captured payment from fixture
         $payment = $this->objFromFixture("Payment", $this->fixtureIdentifier);
         $service = $this->getService($payment);
 
@@ -370,7 +370,7 @@ class RefundServiceTest extends BaseNotificationServiceTest
         // register our mock gateway factory as injection
         Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
 
-        // load an authorized payment from fixture
+        // load a captured payment from fixture
         $payment = $this->objFromFixture("Payment", $this->fixtureIdentifier);
         $service = $this->getService($payment);
 
@@ -382,13 +382,31 @@ class RefundServiceTest extends BaseNotificationServiceTest
     /**
      * @expectedException \SilverStripe\Omnipay\Exception\InvalidParameterException
      */
+    public function testNegativeAmount()
+    {
+        $stubGateway = $this->buildPaymentGatewayStub(true, $this->fixtureReceipt);
+        // register our mock gateway factory as injection
+        Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
+
+        // load a captured payment from fixture
+        $payment = $this->objFromFixture("Payment", $this->fixtureIdentifier);
+        $service = $this->getService($payment);
+
+        // We supply the amount, but specify an amount that is not a positive number
+        // This will throw an InvalidParameterException
+        $service->initiate(array('amount' => '-100'));
+    }
+
+    /**
+     * @expectedException \SilverStripe\Omnipay\Exception\InvalidParameterException
+     */
     public function testPartialRefundUnsupported()
     {
         $stubGateway = $this->buildPaymentGatewayStub(true, $this->fixtureReceipt);
         // register our mock gateway factory as injection
         Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
 
-        // load an authorized payment from fixture
+        // load a captured payment from fixture
         $payment = $this->objFromFixture("Payment", $this->fixtureIdentifier);
         $service = $this->getService($payment);
 
@@ -408,7 +426,7 @@ class RefundServiceTest extends BaseNotificationServiceTest
         // register our mock gateway factory as injection
         Injector::inst()->registerService($this->stubGatewayFactory($stubGateway), 'Omnipay\Common\GatewayFactory');
 
-        // load an authorized payment from fixture
+        // load a captured payment from fixture
         $payment = $this->objFromFixture("Payment", $this->fixtureIdentifier);
         $service = $this->getService($payment);
 
@@ -459,7 +477,7 @@ class RefundServiceTest extends BaseNotificationServiceTest
         // the partial payment should be void
         $partialPayment = $payment->getPartialPayments()->first();
         $this->assertEquals('Void', $partialPayment->Status);
-        $this->assertEquals('669.50', $partialPayment->MoneyAmount);
+        $this->assertEquals('-669.50', $partialPayment->MoneyAmount);
 
         // check existance of messages
         $this->assertDOSContains($this->notificationFailureMessages, $payment->Messages());
