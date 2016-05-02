@@ -22,10 +22,13 @@ class RefundService extends NotificationCompleteService
      * Return money to the previously charged credit card.
      *
      * If the transaction-reference of the payment to refund is known, pass it via $data as
-     * `transactionReference` parameter. Otherwise the service will try to look up the reference
-     * from previous payment messages.
-     *
+     * `transactionReference` parameter. Otherwise the service will look up the previous reference
+     * from the payment itself.
      * If there's no transaction-reference to be found, this method will raise an exception.
+     *
+     * You can issue partial refunds (if the gateway supports it) by passing an `amount` parameter in the $data
+     * array. If the amount given is not a number, or if it exceeds the total amount of the payment, an exception
+     * will be raised.
      *
      * @inheritdoc
      * @throws MissingParameterException if no transaction reference can be found from messages or parameters
@@ -66,7 +69,7 @@ class RefundService extends NotificationCompleteService
 
         $amount = $this->payment->MoneyAmount;
         $isPartial = false;
-        
+
         if (!empty($data['amount'])) {
             $amount = $data['amount'];
             if (!is_numeric($amount)) {

@@ -222,4 +222,56 @@ class PaymentModelTest extends PaymentTest
 
         $this->assertTrue($payment->canVoid());
     }
+
+    public function testMaxCaptureAmount()
+    {
+        $payment = Payment::create()->init('Dummy', 120, 'EUR');
+        // If payment isn't Authorized, return 0
+        $this->assertEquals(0, $payment->getMaxCaptureAmount());
+
+        $payment->Status = 'Authorized';
+
+        Config::inst()->update('GatewayInfo', 'Dummy', array('max_capture' => '30'));
+        $this->assertEquals('150.00', $payment->getMaxCaptureAmount());
+
+        Config::inst()->update('GatewayInfo', 'Dummy', array('max_capture' => '30%'));
+        $this->assertEquals('156.00', $payment->getMaxCaptureAmount());
+
+        Config::inst()->update('GatewayInfo', 'Dummy', array('max_capture' => '17%'));
+        $this->assertEquals('140.40', $payment->getMaxCaptureAmount());
+
+        Config::inst()->remove('GatewayInfo', 'Dummy');
+        Config::inst()->update('GatewayInfo', 'Dummy', array('max_capture' => array(
+            'amount' => array(
+                'USD' => 80,
+                'EUR' => 70,
+                'TRY' => 224,
+                'GBP' => -10 // invalid value, should result in no increase
+            ),
+            'percent' => '20%'
+        )));
+
+        $this->assertEquals('144.00', $payment->getMaxCaptureAmount());
+        $payment->Status = 'Created';
+        $payment->MoneyAmount = '900.00';
+        $payment->Status = 'Authorized';
+        // should use the fixed increase from EUR and USD, since the percentage increase would exceed the fixed amount
+        $this->assertEquals('970.00', $payment->getMaxCaptureAmount());
+        $payment->MoneyCurrency = 'USD';
+        $this->assertEquals('980.00', $payment->getMaxCaptureAmount());
+
+        // should use the percent increase, since 0.2 of 900 won't exceed the fixed amount
+        $payment->MoneyCurrency = 'TRY';
+        $this->assertEquals('1080.00', $payment->getMaxCaptureAmount());
+
+        // no increase with invalid setting
+        $payment->MoneyCurrency = 'GBP';
+        $this->assertEquals('900.00', $payment->getMaxCaptureAmount());
+
+        // test with a small payment amount
+        $payment->Status = 'Created';
+        $payment->init('Dummy', '1.19', 'EUR');
+        $payment->Status = 'Authorized';
+        $this->assertEquals('1.42', $payment->getMaxCaptureAmount());
+    }
 }

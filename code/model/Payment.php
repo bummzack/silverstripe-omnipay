@@ -1,6 +1,7 @@
 <?php
 
 use SilverStripe\Omnipay\GatewayInfo;
+use SilverStripe\Omnipay\PaymentMath;
 
 /**
  * Payment DataObject
@@ -305,6 +306,43 @@ final class Payment extends DataObject
     public function forTemplate()
     {
         return $this->dbObject('Money');
+    }
+
+    /**
+     * Calculate the max amount that can be captured for this payment.
+     * If the Status of the payment isn't 'Authorized', this will return 0
+     * @return int|string the max amount that can be captured for this payment.
+     */
+    public function getMaxCaptureAmount()
+    {
+        if ($this->Status !== 'Authorized') {
+            return 0;
+        }
+
+        $percent = GatewayInfo::maxExcessCapturePercent($this->Gateway);
+        $fixedAmount = GatewayInfo::maxExcessCaptureAmount($this->Gateway, $this->getCurrency());
+
+        // -1 will only be returned if there's a fixed amount, but no percentage.
+        // We can safely return the fixed amount here
+        if ($percent === -1) {
+            return PaymentMath::add($this->MoneyAmount, $fixedAmount);
+        }
+
+        // calculate what amount the percentage will result in
+        $percentAmount = PaymentMath::multiply(PaymentMath::multiply($percent, '0.01'), $this->MoneyAmount);
+
+        // if there's no fixed amount and only the percentage is set, we can return the percentage amount right away.
+        if ($fixedAmount === -1) {
+            return PaymentMath::add($this->MoneyAmount, $percentAmount);
+        }
+
+        // If the amount from the percentage is smaller, use the percentage
+        if (PaymentMath::compare($fixedAmount, $percentAmount) > 0) {
+            return PaymentMath::add($this->MoneyAmount, $percentAmount);
+        }
+
+        // otherwise use the fixed amount
+        return PaymentMath::add($this->MoneyAmount, $fixedAmount);
     }
 
     /**

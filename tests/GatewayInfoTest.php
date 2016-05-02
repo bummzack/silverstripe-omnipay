@@ -47,7 +47,11 @@ class GatewayInfoTest extends SapphireTest
             'is_offsite' => true,
             'can_capture' => true,
             'can_refund' => 'full',
-            'can_void' => false
+            'can_void' => false,
+            'max_capture' => array(
+                'percent' => '20',
+                'amount' => '60'
+            )
         ));
     }
 
@@ -298,6 +302,84 @@ class GatewayInfoTest extends SapphireTest
             GatewayInfo::requiredFields('Dummy'),
             'Required fields should always return at least an array'
         );
+    }
+
+    public function testMaxCapture()
+    {
+        // Without setting the config, the max Excess amount should always be 0
+        $this->assertEquals(0, GatewayInfo::maxExcessCaptureAmount('Dummy'));
+        $this->assertEquals(0, GatewayInfo::maxExcessCapturePercent('Dummy'));
+
+        // Check existing configuration
+        $this->assertEquals(60, GatewayInfo::maxExcessCaptureAmount('PaymentExpress_PxPay'));
+        $this->assertEquals(20, GatewayInfo::maxExcessCapturePercent('PaymentExpress_PxPay'));
+
+        // set only max amount
+        Config::inst()->update('GatewayInfo', 'Dummy', array('max_capture' => '12'));
+
+        $this->assertEquals(12, GatewayInfo::maxExcessCaptureAmount('Dummy'));
+        $this->assertEquals(-1, GatewayInfo::maxExcessCapturePercent('Dummy'));
+
+        // set only percentage
+        Config::inst()->update('GatewayInfo', 'Dummy', array('max_capture' => '15%'));
+
+        $this->assertEquals(-1, GatewayInfo::maxExcessCaptureAmount('Dummy'));
+        $this->assertEquals(15, GatewayInfo::maxExcessCapturePercent('Dummy'));
+
+        // invalid values
+        Config::inst()->update('GatewayInfo', 'Dummy', array('max_capture' => '-1'));
+        $this->assertEquals(0, GatewayInfo::maxExcessCaptureAmount('Dummy'));
+        $this->assertEquals(0, GatewayInfo::maxExcessCapturePercent('Dummy'));
+
+        Config::inst()->update('GatewayInfo', 'Dummy', array('max_capture' => '-20%'));
+        $this->assertEquals(0, GatewayInfo::maxExcessCaptureAmount('Dummy'));
+        $this->assertEquals(0, GatewayInfo::maxExcessCapturePercent('Dummy'));
+
+        Config::inst()->update('GatewayInfo', 'Dummy', array('max_capture' => 'test'));
+        $this->assertEquals(0, GatewayInfo::maxExcessCaptureAmount('Dummy'));
+        $this->assertEquals(0, GatewayInfo::maxExcessCapturePercent('Dummy'));
+
+        // both values
+        Config::inst()->remove('GatewayInfo', 'Dummy');
+        Config::inst()->update('GatewayInfo', 'Dummy', array('max_capture' => array(
+            'amount' => 80,
+            'percent' => 14
+        )));
+        $this->assertEquals(80, GatewayInfo::maxExcessCaptureAmount('Dummy'));
+        $this->assertEquals(14, GatewayInfo::maxExcessCapturePercent('Dummy'));
+
+        Config::inst()->update('GatewayInfo', 'Dummy', array('max_capture' => array(
+            'amount' => 60,
+            'percent' => '30%'
+        )));
+        $this->assertEquals(60, GatewayInfo::maxExcessCaptureAmount('Dummy'));
+        $this->assertEquals(30, GatewayInfo::maxExcessCapturePercent('Dummy'));
+
+        // invalid values
+        Config::inst()->update('GatewayInfo', 'Dummy', array('max_capture' => array(
+            'amount' => -30,
+            'percent' => '-10%'
+        )));
+        $this->assertEquals(0, GatewayInfo::maxExcessCaptureAmount('Dummy'));
+        $this->assertEquals(0, GatewayInfo::maxExcessCapturePercent('Dummy'));
+
+        // Amount values per currency
+        Config::inst()->remove('GatewayInfo', 'Dummy');
+        Config::inst()->update('GatewayInfo', 'Dummy', array('max_capture' => array(
+            'amount' => array(
+                'USD' => 80,
+                'EUR' => '70%', // invalid value, should result in 0
+                'TRY' => 224,
+                'GBP' => -10 // invalid value, should result in 0
+            ),
+            'percent' => '20%'
+        )));
+        $this->assertEquals(0, GatewayInfo::maxExcessCaptureAmount('Dummy'));
+        $this->assertEquals(80, GatewayInfo::maxExcessCaptureAmount('Dummy', 'USD'));
+        $this->assertEquals(0, GatewayInfo::maxExcessCaptureAmount('Dummy', 'EUR'));
+        $this->assertEquals(224, GatewayInfo::maxExcessCaptureAmount('Dummy', 'TRY'));
+        $this->assertEquals(0, GatewayInfo::maxExcessCaptureAmount('Dummy', 'GBP'));
+        $this->assertEquals(20, GatewayInfo::maxExcessCapturePercent('Dummy'));
     }
 
     public function testAllowedMethods()
