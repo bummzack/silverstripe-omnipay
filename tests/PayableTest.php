@@ -51,16 +51,7 @@ class PayableTest extends SapphireTest
         $this->assertNotNull($gridField->getConfig()->getComponentByType(
             'GridFieldEditButton'
         ));
-        $this->assertNotNull($gridField->getConfig()->getComponentByType(
-            'SilverStripe\Omnipay\Admin\GridField\GridFieldCaptureAction'
-        ));
-        $this->assertNotNull($gridField->getConfig()->getComponentByType(
-            'SilverStripe\Omnipay\Admin\GridField\GridFieldRefundAction'
-        ));
-        $this->assertNotNull($gridField->getConfig()->getComponentByType(
-            'SilverStripe\Omnipay\Admin\GridField\GridFieldVoidAction'
-        ));
-
+        
         // check the actions buttons that should be removed
         $this->assertNull($gridField->getConfig()->getComponentByType('GridFieldAddNewButton'));
         $this->assertNull($gridField->getConfig()->getComponentByType('GridFieldDeleteAction'));
