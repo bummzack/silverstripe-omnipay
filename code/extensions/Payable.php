@@ -14,19 +14,6 @@ class Payable extends DataExtension
         'Payments' => 'Payment'
     );
 
-    public function updateCMSFields(FieldList $fields)
-    {
-        $gridConfig = GridFieldConfig_RecordEditor::create()
-            ->removeComponentsByType('GridFieldAddNewButton')
-            ->removeComponentsByType('GridFieldDeleteAction')
-            ->removeComponentsByType('GridFieldFilterHeader')
-            ->removeComponentsByType('GridFieldPageCount');
-
-        $fields->addFieldToTab('Root.Payments',
-            GridField::create('Payments', _t('Payment.PLURALNAME', 'Payments'), $this->owner->Payments(), $gridConfig)
-        );
-    }
-
     /**
      * Get the total captured amount
      * @return float
