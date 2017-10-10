@@ -6,7 +6,6 @@ use Omnipay\Common\AbstractGateway;
 use Omnipay\Common\GatewayFactory;
 use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
 use SilverStripe\Omnipay\Model\Payment;
-use SilverStripe\Dev\Deprecation;
 use SilverStripe\Core\Config\Configurable;
 
 /**
@@ -391,18 +390,7 @@ class GatewayInfo
      */
     public static function getTokenKey($gateway, $default = 'token')
     {
-        $tokenKey = Payment::config()->token_key;
-
-        if ($tokenKey) {
-            Deprecation::notice(
-                '3.0',
-                'Please refrain from setting token_key as config parameter of Payment. ' .
-                'Use GatewayInfo and set the token key on a gateway basis (see docs).'
-            );
-        } else {
-            $tokenKey = self::getConfigSetting($gateway, 'token_key');
-        }
-
+        $tokenKey = self::getConfigSetting($gateway, 'token_key');
         return is_string($tokenKey) ? $tokenKey : $default;
     }
 
