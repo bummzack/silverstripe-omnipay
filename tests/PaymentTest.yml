@@ -4,7 +4,7 @@ SilverStripe\Omnipay\Model\Payment:
     MoneyAmount: 20.23
     MoneyCurrency: NZD
     Status: Created
-    Created: 2013-10-10 12:00:00
+    Created: '2013-10-10 12:00:00'
     Identifier: ce3a0b03349078d8e85d1de8ded3f0
   payment2:
     Gateway: PaymentExpress_PxPay
