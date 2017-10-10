@@ -2,6 +2,8 @@
 
 namespace SilverStripe\Omnipay;
 
+use SilverStripe\Dev\Deprecation;
+use SilverStripe\Omnipay\Model\Payment;
 use SilverStripe\Omnipay\Service\ServiceFactory;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\Director;
@@ -43,7 +45,7 @@ class PaymentGatewayController extends Controller
      */
     public static function get_endpoint_url($action, $identifier)
     {
-        \Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0, use getEndpointUrl');
+        Deprecation::notice('3.0', 'Snake-case methods will be deprecated with 3.0, use getEndpointUrl');
         return self::getEndpointUrl($action, $identifier);
     }
 
@@ -117,11 +119,11 @@ class PaymentGatewayController extends Controller
 
     /**
      * Get the the payment according to the identifer given in the url
-     * @return \Payment the payment
+     * @return Payment the payment
      */
     private function getPayment()
     {
-        return \Payment::get()
+        return Payment::get()
                 ->filter('Identifier', $this->request->param('Identifier'))
                 ->filter('Identifier:not', "")
                 ->first();

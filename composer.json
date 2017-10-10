@@ -9,6 +9,7 @@
         "omnipay/common": "~2.4"
     },
     "require-dev": {
+        "silverstripe/versioned": "^1@dev",
         "guzzle/guzzle": "^3.9",
         "omnipay/paypal": "~2.5",
         "omnipay/dummy": "~2.1",

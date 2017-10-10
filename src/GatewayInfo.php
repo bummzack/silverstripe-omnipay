@@ -5,7 +5,6 @@ namespace SilverStripe\Omnipay;
 use Omnipay\Common\AbstractGateway;
 use Omnipay\Common\GatewayFactory;
 use SilverStripe\Omnipay\Exception\InvalidConfigurationException;
-use SilverStripe\Core\Config\Config;
 use SilverStripe\Omnipay\Model\Payment;
 use SilverStripe\Dev\Deprecation;
 use SilverStripe\Core\Config\Configurable;
@@ -414,7 +413,6 @@ class GatewayInfo
      */
     public static function requiredFields($gateway)
     {
-        $parameters = self::getParameters($gateway);
         $fields = array();
 
         $requiredFields = self::getConfigSetting($gateway, 'required_fields');
