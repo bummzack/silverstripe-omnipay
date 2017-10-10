@@ -5,7 +5,7 @@ dist: trusty
 env:
   global:
     - COMPOSER_ROOT_VERSION=4.0.x-dev
-
+    - CORE_RELEASE=master
 matrix:
   include:
     - php: 5.6
