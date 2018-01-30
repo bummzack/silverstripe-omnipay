@@ -14,7 +14,7 @@ use SilverStripe\Core\Config\Configurable;
  * Use this class in YAML to configure your gateway settings.
  *
  * <code>
- * SilverStripe\Omnipay\Models\GatewayInfo:
+ * SilverStripe\Omnipay\GatewayInfo:
  *   PayPal_Express:
  *     use_authorize: true
  *     parameters:

@@ -182,15 +182,8 @@ return you data for fields originally defined in the form.
 
 ## Debugging payments
 
-A useful way to debug payment issues is to enable file logging:
-
-```yaml
----
-Name: payment
----
-SilverStripe\Omnipay\Model\Payment:
-  file_logging: true #or use 'verbose' for more detailed output
-```
+This module uses standard SilverStripe logging (via monolog). It logs to a custom channel named `ss-omnipay-log`.
+Please read the [logging documentation](https://docs.silverstripe.org/en/4/developer_guides/debugging/error_handling/) on how to set up logging.
 
 ## Renaming gateways and translation
 

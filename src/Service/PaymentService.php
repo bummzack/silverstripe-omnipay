@@ -39,7 +39,7 @@ abstract class PaymentService
      *
      */
     private static $dependencies = [
-        'logger' => '%$Psr\Log\LoggerInterface',
+        'logger' => '%$SilverStripe\Omnipay\Logger',
     ];
 
     /**
@@ -464,17 +464,15 @@ abstract class PaymentService
      */
     protected function logToFile($data, $type = "")
     {
-        if ($logstyle = Payment::config()->file_logging) {
-            $title = $type . " (" . $this->payment->Gateway . ")";
+        $title = $type . " (" . $this->payment->Gateway . ")";
 
-            if ($logstyle === "verbose") {
-                $this->logger->debug($title . "\n\n" . print_r($data, true));
-            } elseif ($logstyle) {
-                $this->logger->debug(implode(", ", array($title,
-                    isset($data['Message']) ? $data['Message'] : " ",
-                    isset($data['Code']) ? $data['Code'] : " ",
-                )));
-            }
+        if ($logstyle === "verbose") {
+            $this->logger->debug($title . "\n\n" . print_r($data, true));
+        } elseif ($logstyle) {
+            $this->logger->debug(implode(", ", array($title,
+                isset($data['Message']) ? $data['Message'] : " ",
+                isset($data['Code']) ? $data['Code'] : " ",
+            )));
         }
     }
 

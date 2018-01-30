@@ -1,0 +1,12 @@
+---
+Name: omnipay-logging
+---
+# Set up a logger for omnipay that logs to a separate channel named "ss-omnipay-log"
+SilverStripe\Core\Injector\Injector:
+  SilverStripe\Omnipay\Logger:
+    type: singleton
+    class: Monolog\Logger
+    constructor:
+      - 'ss-omnipay-log'
+    calls:
+      pushDisplayErrorHandler: [ pushHandler, [ '%$Monolog\Handler\HandlerInterface' ] ]
