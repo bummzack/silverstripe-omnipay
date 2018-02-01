@@ -83,7 +83,7 @@ class GatewayInfo
 
         if (!is_array($allowed) || empty($allowed)) {
             throw new InvalidConfigurationException(
-                'No allowed gateways configured. Use Payment.allowed_gateways config.'
+                'No allowed gateways configured. Use SilverStripe\Omnipay\Model\Payment.allowed_gateways config.'
             );
         }
 
