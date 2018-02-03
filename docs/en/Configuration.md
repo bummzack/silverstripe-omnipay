@@ -5,7 +5,7 @@ Here you can define a list of allowed gateways, and separately set the gateway-s
 
 You configure the allowed gateways by setting the `allowed_gateway` config on `Payment`.
 
-To configure the individual gateway parameters, use `GatewayInfo` and add a key for every Gateway you want to configure.
+To configure the individual gateway parameters, use `SilverStripe\Omnipay\GatewayInfo` and add a key for every Gateway you want to configure.
 
 Each Gateway can have the following settings:
 

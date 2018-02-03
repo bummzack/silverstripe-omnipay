@@ -182,8 +182,8 @@ return you data for fields originally defined in the form.
 
 ## Debugging payments
 
-This module uses standard SilverStripe logging (via monolog). It logs to a custom channel named `ss-omnipay-log`.
-Please read the [logging documentation](https://docs.silverstripe.org/en/4/developer_guides/debugging/error_handling/) on how to set up logging.
+Please read the [logging documentation](docs/en/Logging.md) on how to set up logging.
+
 
 ## Renaming gateways and translation
 
